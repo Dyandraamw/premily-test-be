@@ -21,5 +21,5 @@ type Role string
 const(
 	UserRole		Role = "user"
 	AdminRole		Role = "admin"
-	AccesControlRole	Role = "access_control"
+	AccessControlRole	Role = "access_control"
 )

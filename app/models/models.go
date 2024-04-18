@@ -2,6 +2,6 @@ package models
 
 import "fmt"
 
-func models() {
+func Models() {
 	fmt.Println("Ini models")
 }
