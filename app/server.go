@@ -55,6 +55,17 @@ func (server *Server) initializeDB(dbConfig DBConfig) {
 		log.Fatal(err)
 		// fmt.Printf("Gagal melakukan koneksi ke database!")
 	}
+
+	for _, model := range RegisterModels(){
+		err= server.DB.Debug().AutoMigrate(model.Model)
+
+		if err != nil{
+			log.Fatal(err)
+			fmt.Println("Gagal Migrasi!")
+		}
+	}
+
+	fmt.Println("Migrasi Berhasil !")
 }
 
 //method yang digunakan untuk menjaga apabila ENV kosong

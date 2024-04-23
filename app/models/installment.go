@@ -8,5 +8,6 @@ type Installment struct {
 	Due_Date       time.Time`gorm:"not null"`
 	Ins_Amount		float64	`gorm:"type:decimal(16,2);not null"`
 
+	Payment_Details		[]Payment_Details	`gorm:"foreign_key:Installment_ID"`
 
 }
