@@ -11,7 +11,7 @@ type User struct{
 	Phone		string	`gorm:"size:100;not null"`
 	Password	string	`gorm:"size:255;not null"`
 	CompanyName	string	`gorm:"size:255;not null"`
-	Role 		Role	`gorm:"type:enum('user','admin', 'access_control'); default:user;not null"`
+	Role 		Role	`gorm:"default:user;not null"`
 	RememberToken	string `gorm:"size:255;not null"`
 	
 

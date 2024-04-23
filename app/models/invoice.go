@@ -5,7 +5,7 @@ import "time"
 type Invoice struct {
 	Invoice_ID          string `gorm:"size:100;uniqueIndex;not null;primary_key"`
 	UserID				string	`gorm:"size:100"`
-	Type               Type   `gorm:"type:enum('credit','debit'); not null"`
+	Type               Type   `gorm:"not null"`
 	Recipient          string `gorm:"size:255;not null"`
 	Address            string `gorm:"type:text;not null"`
 	Policy_Number      string `gorm:"size:255;not null"`
