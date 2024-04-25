@@ -15,8 +15,9 @@ type User struct{
 	RememberToken	string `gorm:"size:255;not null"`
 	
 
-	Invoice_ID		[]Invoice				`gorm:"foreign_key : UserID"`
-	Payment_Status	[]Payment_Status		`gorm:"foreign_key: UserID"`
+	Invoice			[]Invoice				`gorm:"foreignKey : UserID"`
+	Payment_Status	[]Payment_Status		`gorm:"foreignKey: UserID"`
+	Statement_Of_Account	[]Statement_Of_Account	`gorm:"foreignKey : UserID"`	
 
 	Created_At	time.Time
 	Updated_At	time.Time

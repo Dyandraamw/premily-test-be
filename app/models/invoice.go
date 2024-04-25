@@ -17,10 +17,10 @@ type Invoice struct {
 	Terms_Of_Period		string	`gorm:"size:255;not null"`
 	Remarks				string	`gorm:"type:text;not null"`
 
-	Description_Details	Description_Details		`gorm:"foreign_key:Invoice_ID"`
-	Installment			[]Installment			`gorm:"foreign_key:Invoice_ID"`
-	Sum_Insured_Details	[]Sum_Insured_Details	`gorm:"foreign_key:Invoice_ID"`
-	Payment_Status		Payment_Status			`gorm:"foreign_key:Invoice_ID"`
+	Description_Details	Description_Details		`gorm:"foreignKey:Invoice_ID"`
+	Installment			[]Installment			`gorm:"foreignKey:Invoice_ID"`
+	Sum_Insured_Details	[]Sum_Insured_Details	`gorm:"foreignKey:Invoice_ID"`
+	Payment_Status		Payment_Status			`gorm:"foreignKey:Invoice_ID"`
 
 	Created_At		time.Time
 	Updated_At		time.Time
