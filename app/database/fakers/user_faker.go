@@ -11,15 +11,15 @@ import (
 
 func UserFaker(db *gorm.DB) *models.User {
 	return &models.User{
-		UserID: 	uuid.New().String(),
-		Username:	faker.Username(),
-		Phone:		faker.Phonenumber(),
-		Password:	faker.Password(),
-		CompanyName:	"PT Nusa Mandiri",
-		Role:			"User",
-		RememberToken: 	"",
-		Created_At:		time.Time{},
-		Updated_At:		time.Time{},
-
+		UserID:        uuid.New().String(),
+		Username:      faker.Username(),
+		Name:          faker.Name(),
+		Phone:         faker.Phonenumber(),
+		Password:      faker.Password(),
+		CompanyName:   "PT Nusa Mandiri",
+		Role:          "staff",
+		RememberToken: "",
+		Created_At:    time.Time{},
+		Updated_At:    time.Time{},
 	}
 }
