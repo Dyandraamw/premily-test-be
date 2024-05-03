@@ -1,7 +1,7 @@
-package app
+package controllers
 
 import (
-	"github.com/frangklynndruru/premily_backend/app/controllers"
+	// "github.com/frangklynndruru/premily_backend/app/controllers"
 	"github.com/gorilla/mux"
 )
 
@@ -13,5 +13,5 @@ import (
 
 func (server *Server) initializeRoutes() {
 	server.Router = mux.NewRouter()
-	server.Router.HandleFunc("/", controllers.Home).Methods("GET")
+	// server.Router.HandleFunc("/", server.Home).Methods("GET")
 }
