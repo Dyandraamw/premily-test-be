@@ -5,6 +5,6 @@ import (
 	"net/http"
 )
 
-func Home(w http.ResponseWriter, r *http.Request ) {
+func (server *Server)Home(w http.ResponseWriter, r *http.Request ) {
 	fmt.Println("Selamat datang di premily")
 }

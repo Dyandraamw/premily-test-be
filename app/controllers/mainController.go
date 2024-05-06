@@ -10,20 +10,23 @@ import (
 	"github.com/frangklynndruru/premily_backend/app/models"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/urfave/cli"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type Server struct {
-	DB     *gorm.DB
-	Router *mux.Router
+	DB        *gorm.DB
+	Router    *mux.Router
+	AppConfig *AppConfig
 }
 
 type AppConfig struct {
 	AppName string
 	AppEnv  string
 	AppPort string
+	AppURL  string
 }
 
 type DBConfig struct {
@@ -33,11 +36,13 @@ type DBConfig struct {
 	DBName     string
 	DBPort     string
 }
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+var sessionUser = "user-session"
 
 func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("selamat datang di " + appConfig.AppName)
 
-	// server.initializeDB(dbConfig)
+	server.initializeDB(dbConfig)
 	server.initializeRoutes()
 	// seeders.DBSeed(server.DB)
 }
@@ -112,4 +117,12 @@ func (server *Server) InitCommands(config AppConfig, dbConfig DBConfig) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (server *Server) IsLogin(r *http.Request) bool{
+	session, _ := store.Get(r, sessionUser)
+	if session.Values["user_id"] == nil{
+		return false
+	}
+	return true
 }
