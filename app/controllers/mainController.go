@@ -119,10 +119,12 @@ func (server *Server) InitCommands(config AppConfig, dbConfig DBConfig) {
 	}
 }
 
-func (server *Server) IsLogin(r *http.Request) bool{
+func IsLogin(r *http.Request) bool{
 	session, _ := store.Get(r, sessionUser)
 	if session.Values["user_id"] == nil{
 		return false
 	}
 	return true
 }
+
+// func ComparePassword(password string, hashPassword )
