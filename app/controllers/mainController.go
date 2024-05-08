@@ -127,4 +127,21 @@ func IsLogin(r *http.Request) bool{
 	return true
 }
 
-// func ComparePassword(password string, hashPassword )
+func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *models.User{
+
+	if !IsLogin(r){
+		return nil
+	}
+
+	session, _ := store.Get(r, sessionUser)
+
+	userModel := models.User{}
+	user, err := userModel.FindByID(server.DB, session.Values["user_id"].(string))
+	if err != nil{
+		session.Values["user_id"] = nil
+		session.Save(r, w)
+		return nil
+	}
+
+	return user
+}  

@@ -46,6 +46,14 @@ func (u *User) FindByEmail(db *gorm.DB, email string) (*User, error) {
 	return &user, nil
 }
 
-// func ()  {
-	
-// }
+func (u *User) FindByID(db *gorm.DB, userID string) (*User, error) {
+	var user User
+	var err error
+
+	err = db.Debug().Model(User{}).Where("user_id = ?",userID).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}

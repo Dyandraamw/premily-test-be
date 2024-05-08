@@ -10,9 +10,10 @@ import (
 )
 // func (server *Server) LoginPage(w http.ResponseWriter, r *http.Request){
 // 	http.Redirect(w, r, "/login", http.StatusOK)
+//render frontend
 
 // }
-func (server *Server) LoginAction(w http.ResponseWriter, r *http.Request){
+func (server *Server) SignInAction(w http.ResponseWriter, r *http.Request){
 	userModel := models.User{}
 	
 	email := r.FormValue("email")
@@ -28,7 +29,8 @@ func (server *Server) LoginAction(w http.ResponseWriter, r *http.Request){
 	var compare_password = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
 	if compare_password == nil {
-		// store.Set("email", user.Email)
+		
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		// http.Redirect(w, r, "/login", http.StatusSeeOther )
 		return 
 	}
@@ -42,4 +44,16 @@ func (server *Server) LoginAction(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+func (server *Server) SignOutAction(w http.ResponseWriter, r *http.Request){
+
+	session, _ := store.Get(r, sessionUser)
+
+	session.Values["user_id"]= nil
+	session.Save(r,w)
+
+	// http.Redirect(w, r, "/", http.StatusOK)
+	
+	
 }
