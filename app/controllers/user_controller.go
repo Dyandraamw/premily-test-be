@@ -68,10 +68,23 @@ func (server *Server) SignOutAction(w http.ResponseWriter, r *http.Request){
 	
 }
 
-func (sever *Server) SignUpAction(w http.ResponseWriter, r *http.Request){
+func (server *Server) SignUpAction(w http.ResponseWriter, r *http.Request){
 	username := r.FormValue("username")
 	email := r.FormValue("email")
-	phoneNumber := r.FormValue("phoneNumber")
+	phone := r.FormValue("phone")
 	password := r.FormValue("password")
+	confirmPassword := r.FormValue("confirmPassword")
 	company := r.FormValue("company")
+
+	if username == "" || email == "" || phone == "" || password == "" || confirmPassword == "" || company == ""{
+		http.Error(w, "Please fill the required fields", http.StatusSeeOther)
+		return
+	}
+
+	userModel := models.User{}
+	userRegistered, _ := userModel.FindByEmail(server.DB, email, password)
+	if userRegistered != nil {
+		http.Error(w, "Email already sign-up!", http.StatusSeeOther)
+		return
+	} 
 }
