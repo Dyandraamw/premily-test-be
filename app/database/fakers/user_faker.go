@@ -14,7 +14,7 @@ func UserFaker(db *gorm.DB) *models.User {
 		UserID:        uuid.New().String(),
 		Username:      faker.Username(),
 		Name:          faker.Name(),
-		Email: 		   "frangklyn.ndruru@gmail.com",
+		Email: 		   "ndruru@gmail.com",
 		Phone:         faker.Phonenumber(),
 		Password:      faker.Password(),
 		CompanyName:   "PT Nusa Mandiri",

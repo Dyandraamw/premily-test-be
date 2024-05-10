@@ -9,6 +9,8 @@ import (
 	"github.com/frangklynndruru/premily_backend/app/database/seeders"
 	"github.com/frangklynndruru/premily_backend/app/models"
 
+	_ "golang.org/x/crypto/bcrypt"
+
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/urfave/cli"
@@ -119,6 +121,8 @@ func (server *Server) InitCommands(config AppConfig, dbConfig DBConfig) {
 	}
 }
 
+/*Melakukan pengecekan apakah user sudah sukses untuk login atau tidak
+=========================*/
 func IsLogin(r *http.Request) bool{
 	session, _ := store.Get(r, sessionUser)
 	if session.Values["user_id"] == nil{
@@ -145,3 +149,6 @@ func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *model
 
 	return user
 }  
+// func verifyPassword(password string, comparePassword string) bool {
+// 	return bcrypt.CompareHashAndPassword([]byte(comparePassword), []byte(password)) == nil
+// }

@@ -22,7 +22,7 @@ func InvoiceFaker(db *gorm.DB) *models.Invoice {
             // Jika ID belum ada di dalam database, buat objek Invoice dan simpan
             newInvoice := &models.Invoice{
                 Invoice_ID:         invoiceID,
-                UserID:             "1edc445c-069a-4ffc-9edd-ddacc83ed6a8",
+                UserID:             "62784dac-20d3-417d-91e4-8ffed32a07de",
                 Type:               "Debit",
                 Recipient:          "PT Garuda Indonesia",
                 Address:            "",
