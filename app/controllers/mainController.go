@@ -10,6 +10,7 @@ import (
 	"github.com/frangklynndruru/premily_backend/app/models"
 
 	_ "golang.org/x/crypto/bcrypt"
+	_ "golang.org/x/crypto/bcrypt"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -149,6 +150,12 @@ func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *model
 
 	return user
 }  
+
+// func MakePassword(password string)(string, error){
+// 	comparedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// 	return string(comparedPassword), err
+// }
+
 // func verifyPassword(password string, comparePassword string) bool {
 // 	return bcrypt.CompareHashAndPassword([]byte(comparePassword), []byte(password)) == nil
 // }

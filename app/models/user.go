@@ -59,3 +59,21 @@ func (u *User) FindByID(db *gorm.DB, userID string) (*User, error) {
 
 	return &user, nil
 }
+
+func (u *User) CreateUser(db *gorm.DB, params *User) (*User, error)  {
+	user := &User{
+		UserID: params.UserID,
+		Username: params.Username,
+		Name: params.Name,
+		Email: params.Email,
+		Phone: params.Phone,
+		Password: params.Password,
+		CompanyName: params.CompanyName,
+	}
+	err := db.Debug().Create(&user).Error
+	if err != nil{
+		return nil,err
+	}
+
+	return user, nil
+}

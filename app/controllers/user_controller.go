@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	_ "fmt"
 	"net/http"
+	
 
 	"github.com/frangklynndruru/premily_backend/app/models"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -70,13 +72,14 @@ func (server *Server) SignOutAction(w http.ResponseWriter, r *http.Request){
 
 func (server *Server) SignUpAction(w http.ResponseWriter, r *http.Request){
 	username := r.FormValue("username")
+	name := r.FormValue("name")
 	email := r.FormValue("email")
 	phone := r.FormValue("phone")
 	password := r.FormValue("password")
 	confirmPassword := r.FormValue("confirmPassword")
 	company := r.FormValue("company")
 
-	if username == "" || email == "" || phone == "" || password == "" || confirmPassword == "" || company == ""{
+	if username == ""|| name == "" || email == "" || phone == "" || password == "" || confirmPassword == "" || company == ""{
 		http.Error(w, "Please fill the required fields", http.StatusSeeOther)
 		return
 	}
@@ -84,7 +87,36 @@ func (server *Server) SignUpAction(w http.ResponseWriter, r *http.Request){
 	userModel := models.User{}
 	userRegistered, _ := userModel.FindByEmail(server.DB, email, password)
 	if userRegistered != nil {
-		http.Error(w, "Email already sign-up!", http.StatusSeeOther)
+		http.Error(w, "Email already sign-up!", http.StatusConflict)
 		return
 	} 
+
+	if password != confirmPassword {
+		http.Error(w, "Password do not match", http.StatusUnauthorized)
+		return
+	}
+	// hashPassword, _ := MakePassword(password)
+	makePassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	params := &models.User{
+		UserID: uuid.New().String(),
+		Username: username,
+		Name : name,
+		Email: email,
+		Phone: phone,
+		Password: string(makePassword),
+		CompanyName: company,
+
+	}
+
+
+	user, err := userModel.CreateUser(server.DB, params)
+	if err != nil{
+		http.Error(w, "Failed to sign-up!", http.StatusInternalServerError)
+		return
+	}
+
+	data, _:= json.Marshal(user)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
