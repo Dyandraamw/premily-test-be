@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+	"math/rand"
 	_ "net/http"
 	"time"
 
@@ -54,4 +56,45 @@ func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 
 	return &invoice, nil
 
+}
+
+func (i *Invoice) CreateInvoices(db *gorm.DB, invoices *Invoice) (*Invoice, error) {
+	invoicesModels := &Invoice{
+		Invoice_ID:         invoices.Invoice_ID,
+		// UserID:             invoices.UserID,
+		Type: invoices.Type,
+		Recipient: invoices.Recipient,
+		Address:            invoices.Address,
+		Policy_Number:      invoices.Policy_Number,
+		Name_Of_Insured:    invoices.Name_Of_Insured,
+		Address_Of_Insured: invoices.Address_Of_Insured,
+		Type_Of_Insurance:  invoices.Type_Of_Insurance,
+		Period_Start:       invoices.Period_Start,
+		Period_End:         invoices.Period_End,
+		Terms_Of_Period:    invoices.Terms_Of_Period,
+		Remarks:            invoices.Remarks,
+	}
+	err := db.Debug().Create(&invoicesModels).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return invoicesModels, nil
+}
+
+func GenerateInvoiceID(db *gorm.DB, type_of_invoices Type) (string, error) {
+	
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(1000)
+	prefix := ""
+
+	if type_of_invoices == "debit" {
+		prefix = "DN"
+	} else if type_of_invoices == "credit" {
+		prefix = "CN"
+	} else {
+		prefix = "UNK"
+	}
+
+	return fmt.Sprintf("%s-%05d", prefix, randomNumber), nil
 }

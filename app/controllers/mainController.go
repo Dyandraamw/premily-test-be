@@ -3,13 +3,14 @@ package controllers
 import (
 	"fmt"
 	"log"
+	
 	"net/http"
 	"os"
+	
 
 	"github.com/frangklynndruru/premily_backend/app/database/seeders"
 	"github.com/frangklynndruru/premily_backend/app/models"
 
-	_ "golang.org/x/crypto/bcrypt"
 	_ "golang.org/x/crypto/bcrypt"
 
 	"github.com/gorilla/mux"
@@ -159,3 +160,4 @@ func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *model
 // func verifyPassword(password string, comparePassword string) bool {
 // 	return bcrypt.CompareHashAndPassword([]byte(comparePassword), []byte(password)) == nil
 // }
+
