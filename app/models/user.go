@@ -48,6 +48,20 @@ func (u *User) FindByEmail(db *gorm.DB, email string, password string) (*User, e
 	return &user, nil
 }
 
+func (u *User) FindEmailRegis(db *gorm.DB, email string) (*User, error) {
+	var user User
+	var err error
+	// var password User
+	
+	err = db.Debug().Model(User{}).Where("LOWER(email) = ? ",strings.ToLower(email)).First(&user).Error
+	if err != nil {
+
+		return nil, err
+	}
+	
+	return &user, nil
+}
+
 func (u *User) FindByID(db *gorm.DB, userID string) (*User, error) {
 	var user User
 	var err error

@@ -20,4 +20,6 @@ func (server *Server) initializeRoutes() {
 	server.Router.HandleFunc("/sign-out", server.SignOutAction).Methods("GET")
 	server.Router.HandleFunc("/sign-up", server.SignUpAction).Methods("POST")
 
+	server.Router.HandleFunc("/create-invoices", server.CreateInvoicesAction).Methods("POST")
+
 }
