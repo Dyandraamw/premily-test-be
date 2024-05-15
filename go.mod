@@ -12,6 +12,7 @@ require (
 require (
 	github.com/bxcodec/faker/v4 v4.0.0-beta.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
+	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.2.2 // indirect
 	github.com/gosimple/slug v1.14.0 // indirect

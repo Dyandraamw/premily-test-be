@@ -10,7 +10,6 @@ func RegisterModels() []Model {
 	// return []Model{
 	// 	{Model: models.User{}},
 	// 	{Model: models.Invoice{}},
-	// 	{Model: models.Description_Details{}},
 	// 	{Model: models.Installment{}},
 	// 	{Model: models.Sum_Insured_Details{}},
 	// 	{Model: models.Payment_Details{}},
@@ -22,7 +21,6 @@ func RegisterModels() []Model {
 	return []Model{
 		{Model: User{}},
 		{Model: Invoice{}},
-		{Model: Description_Details{}},
 		{Model: Installment{}},
 		{Model: Sum_Insured_Details{}},
 		{Model: Payment_Details{}},
