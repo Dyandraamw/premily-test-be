@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/shopspring/decimal"
-
 	"github.com/frangklynndruru/premily_backend/app/models"
+	"github.com/shopspring/decimal"
 )
 
 func (server *Server) Invoice(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +72,7 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		desc_admin_cost == "" || desc_risk_management == "" || desc_brokage == "" || desc_pph == "" || policy_number == "" ||
 		name_of_insured == "" || address_of_insured == "" || type_of_insurance == "" ||
 		periode_start == "" || periode_end == "" || terms_of_period == "" || remarks == "" || due_date == "" || ins_amount == "" ||
-		items_name == "" || sum_ins_amount == "" || notes == ""{
+		items_name == "" || sum_ins_amount == "" || notes == "" {
 		http.Error(w, "Please fill the required fields!", http.StatusSeeOther)
 
 		return
@@ -180,7 +179,7 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 
 	installments := &models.Installment{
 		Installment_ID: idGeneratorInstallment.NextID(),
-		Invoice_ID: invoices.Invoice_ID,
+		Invoice_ID:     invoices.Invoice_ID,
 		Due_Date:       d_date,
 		Ins_Amount:     insAmountDecimal,
 	}
@@ -196,52 +195,30 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	var idGeneratorSumIns = NewIDGenerator("S-INS")
 
 	sum_insureds := &models.Sum_Insured_Details{
-		Sum_Insured_ID: idGeneratorSumIns.NextID(),
-		Invoice_ID: invoices.Invoice_ID,
-		Items_Name: items_name,
+		Sum_Insured_ID:     idGeneratorSumIns.NextID(),
+		Invoice_ID:         invoices.Invoice_ID,
+		Items_Name:         items_name,
 		Sum_Insured_Amount: sumInsAmountDecimal,
-		Notes: notes,
+		Notes:              notes,
 	}
 
 	_, err = sumIns_M.CreateSumInsuredDetails(server.DB, sum_insureds)
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		fmt.Println("Sum insured fail!")
 		return
 	}
 
 	var result models.Invoice
-	err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?", 
-			invoices.Invoice_ID).First(&result).Error
+	err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?",
+		invoices.Invoice_ID).First(&result).Error
 
+	if err != nil {
+		return
+	}
 	data, _ := json.Marshal(result)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 
-}
-
-func (server *Server) CreateDescriptionDetails(w http.ResponseWriter, r *http.Request) {
-
-}
-
-type IDGenerator struct {
-	prefix string
-	count  int
-}
-
-func NewIDGenerator(prefix string) *IDGenerator {
-	return &IDGenerator{
-		prefix: prefix,
-		count:  0,
-	}
-}
-
-func (g *IDGenerator) NextID() string {
-	g.count = g.count + 1
-	return fmt.Sprintf("%s-%s", g.prefix, g.pad(g.count, 5))
-}
-
-func (g *IDGenerator) pad(number, width int) string {
-	return fmt.Sprintf("%0*d", width, number)
 }

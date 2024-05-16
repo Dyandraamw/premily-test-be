@@ -36,6 +36,8 @@ const (
 	PendingRole       Role = "pending"
 )
 
+
+
 func (u *User) FindByEmail(db *gorm.DB, email string, password string) (*User, error) {
 	var user User
 	var err error
