@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
 )
 
@@ -32,11 +33,29 @@ func (server *Server) CreateSoaAction(w http.ResponseWriter, r *http.Request) {
 
 	soa_M := models.Statement_Of_Account{}
 	var idGeneratorSOA = NewIDGenerator("SOA")
-	soa := &models.Statement_Of_Account{
-		SOA_ID: idGeneratorSOA.NextID(),
-		Name_Of_Insured: name_of_insured_soa,
-		Period_Start: p_start_soa,
-		Period_End: p_end_soa,
+
+	userID, err:= auth.GetTokenUserLogin(r.Context())
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+	}
+	soa := &models.Statement_Of_Account{}
+	for{
+		soaID := idGeneratorSOA.NextID()
+
+		var existSOA models.Statement_Of_Account
+
+		scan := server.DB.Where("soa_id = ?", soaID).First(&existSOA)
+
+		if scan.RowsAffected == 0{
+			soa = &models.Statement_Of_Account{
+				SOA_ID: soaID,
+				UserID: userID,
+				Name_Of_Insured: name_of_insured_soa,
+				Period_Start: p_start_soa,
+				Period_End: p_end_soa,
+			}
+			break
+		}
 	}
 
 	soaShow, err := soa_M.CreateNewSOA(server.DB, soa)

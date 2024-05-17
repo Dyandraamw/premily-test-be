@@ -50,7 +50,7 @@ func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 	var err error
 	var invoice []Invoice
 
-	err = db.Debug().Model(&Invoice{}).Find(&invoice).Error
+	err = db.Debug().Preload("Installment").Preload("Sum_Insured_Details").Find(&invoice).Error
 	if err != nil {
 
 		return nil, err
@@ -62,6 +62,22 @@ func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 
 	return &invoice, nil
 
+}
+
+func (i *Invoice) UpdateInvoices() {
+
+}
+
+func (i *Invoice) DeletedInvoices(db *gorm.DB, invoice_ID string) error{
+	invoice := &Invoice{}
+	if err := db.Debug().First(&invoice, "invoice_id = ?", invoice_ID).Error; err != nil {
+		return err
+	}
+	if err := db.Delete(&invoice).Error; err != nil {
+		fmt.Printf("Fail!")
+		return err
+	}
+	return nil
 }
 
 func (i *Invoice) CreateInvoices(db *gorm.DB, invoices *Invoice) (*Invoice, error) {

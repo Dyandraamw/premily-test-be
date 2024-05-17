@@ -152,6 +152,8 @@ func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *model
 	return user
 }  
 
+
+
 // func MakePassword(password string)(string, error){
 // 	comparedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 // 	return string(comparedPassword), err

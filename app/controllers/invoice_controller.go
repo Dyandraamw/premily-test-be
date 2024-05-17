@@ -7,21 +7,23 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
+	"github.com/gorilla/mux"
 	"github.com/shopspring/decimal"
 )
 
 func (server *Server) Invoice(w http.ResponseWriter, r *http.Request) {
 	invoiceModel := models.Invoice{}
 
-	res, err := invoiceModel.GetInvoice(server.DB)
-	fmt.Println(res)
+	invoices, err := invoiceModel.GetInvoice(server.DB)
+
 	// fmt.Println(invoiceModel.GetInvoice(server.DB))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	data, _ := json.Marshal(res)
+	data, _ := json.Marshal(invoices)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
@@ -141,6 +143,11 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	userID, err := auth.GetTokenUserLogin(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+	}
+
 	invoices_M := models.Invoice{}
 	invoice_ID_Generate, err := models.GenerateInvoiceID(server.DB, models.Type(typeInvoice))
 	if err != nil {
@@ -148,6 +155,7 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	}
 	invoices := &models.Invoice{
 		Invoice_ID:           invoice_ID_Generate,
+		UserID:               userID,
 		Type:                 models.Type(typeInvoice),
 		Recipient:            recipient,
 		Address:              address,
@@ -177,13 +185,22 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	installment_M := models.Installment{}
 	var idGeneratorInstallment = NewIDGenerator("INS")
 
-	installments := &models.Installment{
-		Installment_ID: idGeneratorInstallment.NextID(),
-		Invoice_ID:     invoices.Invoice_ID,
-		Due_Date:       d_date,
-		Ins_Amount:     insAmountDecimal,
-	}
+	installments := &models.Installment{}
+	for {
+		insID := idGeneratorInstallment.NextID()
+		var existInstallment models.Installment
 
+		scan := server.DB.Where("installment_id = ?", insID).First(&existInstallment)
+		if scan.RowsAffected == 0 {
+			installments = &models.Installment{
+				Installment_ID: insID,
+				Invoice_ID:     invoices.Invoice_ID,
+				Due_Date:       d_date,
+				Ins_Amount:     insAmountDecimal,
+			}
+			break
+		}
+	}
 	_, err = installment_M.CreateInstallment(server.DB, installments)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -194,14 +211,25 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	sumIns_M := models.Sum_Insured_Details{}
 	var idGeneratorSumIns = NewIDGenerator("S-INS")
 
-	sum_insureds := &models.Sum_Insured_Details{
-		Sum_Insured_ID:     idGeneratorSumIns.NextID(),
-		Invoice_ID:         invoices.Invoice_ID,
-		Items_Name:         items_name,
-		Sum_Insured_Amount: sumInsAmountDecimal,
-		Notes:              notes,
-	}
+	sum_insureds := &models.Sum_Insured_Details{}
+	for {
+		sum_ins_ID := idGeneratorSumIns.NextID()
 
+		var existSumIns models.Sum_Insured_Details
+
+		scan := server.DB.Where("sum_insured_id = ?", sum_ins_ID).First(&existSumIns)
+
+		if scan.RowsAffected == 0 {
+			sum_insureds = &models.Sum_Insured_Details{
+				Sum_Insured_ID:     sum_ins_ID,
+				Invoice_ID:         invoices.Invoice_ID,
+				Items_Name:         items_name,
+				Sum_Insured_Amount: sumInsAmountDecimal,
+				Notes:              notes,
+			}
+			break
+		}
+	}
 	_, err = sumIns_M.CreateSumInsuredDetails(server.DB, sum_insureds)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -221,4 +249,23 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 
+}
+
+func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (server *Server) DeletedInvoicesAction(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	invoice_ID := vars["invoice_id"]
+
+	invoices := &models.Invoice{}
+	err := invoices.DeletedInvoices(server.DB, invoice_ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Delete Fail!", http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Invoice deleted successfully"))
 }

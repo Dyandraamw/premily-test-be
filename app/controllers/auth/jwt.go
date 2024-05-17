@@ -1,8 +1,11 @@
 package auth
 
 import (
+	"context"
+	"errors"
 	"os"
 	"time"
+	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -31,7 +34,7 @@ func GenerateJWT(UserID string) (string, error) {
 	return tokenString, err
 }
 
-func TokenVerify(tokenCode string) (string, error) {
+func TokenVerify(tokenCode string) (*Claims, error) {
 	claimsToken := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenCode, claimsToken, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecretKey, nil
@@ -41,7 +44,21 @@ func TokenVerify(tokenCode string) (string, error) {
 		return nil, err
 	}
 	if !token.Valid {
-		return nil, err
+		return nil, errors.New("Invalid token")
 	}
-	return claimsToken, nil
+	if claims, ok := token.Claims.(*Claims); ok {
+		return claims, nil
+	} else {
+		return nil, errors.New("Invalid claims")
+	}
+}
+
+
+func  GetTokenUserLogin(ctx context.Context) (string, error) {
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok || userID == ""{
+		
+		return "", http.ErrNoCookie
+	}
+	return userID, nil
 }
