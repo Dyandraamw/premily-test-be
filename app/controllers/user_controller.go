@@ -7,6 +7,7 @@ import (
 
 	"regexp"
 
+	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -90,13 +91,18 @@ func (server *Server) SignInAction(w http.ResponseWriter, r *http.Request) {
         return
     }
 	// fmt.Println("Lolos PW")
+
+	tokenJWT, err := auth.GenerateJWT(user.UserID)
+	if err != nil {
+		return
+	}
 	session, _ := store.Get(r, sessionUser)
 	session.Values["user_id"] = user.UserID
 	session.Save(r, w)
 
 	// http.Redirect(w, r, "/", http. StatusSeeOther)
 
-	data, _ := json.Marshal(user)
+	data, _ := json.Marshal(map[string]string{"token": tokenJWT})
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
