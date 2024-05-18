@@ -63,8 +63,21 @@ func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 	return &invoice, nil
 
 }
+func (i *Invoice) GetInvoiceByIDmodel(db *gorm.DB, invoice_ID string) (*[]Invoice, error) {
+	var err error
+	var invoice []Invoice
 
-func (i *Invoice) UpdateInvoices() {
+	err = db.Debug().Preload("Installment").Preload("Sum_Insured_Details").First(&invoice, "invoice_id = ?", invoice_ID).Error
+	if err != nil {
+
+		return nil, err
+	}
+
+	if db.Error != nil {
+		return nil, db.Error
+	}
+
+	return &invoice, nil
 
 }
 
@@ -78,6 +91,39 @@ func (i *Invoice) DeletedInvoices(db *gorm.DB, invoice_ID string) error{
 		return err
 	}
 	return nil
+}
+
+func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string) error{
+	var invoice Invoice
+	if err := db.First(&invoice, "invoice_id = ?", invoice_ID).Error; err != nil{
+		fmt.Println("invoice tidak ditemukan - model")
+		return nil
+	}
+	invoice.Type = 					i.Type
+	invoice.Recipient = 			i.Recipient
+	invoice.Address = 				i.Address
+	invoice.Desc_Premium = 			i.Desc_Premium
+	invoice.Desc_Discount = 		i.Desc_Discount
+	invoice.Desc_Admin_Cost = 		i.Desc_Admin_Cost
+	invoice.Desc_Risk_Management = 	i.Desc_Risk_Management
+	invoice.Desc_Brokage = 			i.Desc_Brokage
+	invoice.Desc_PPH =	 			i.Desc_PPH
+	invoice.Policy_Number = 		i.Policy_Number
+	invoice.Name_Of_Insured = 		i.Name_Of_Insured
+	invoice.Address_Of_Insured = 	i.Address_Of_Insured
+	invoice.Type_Of_Insurance = 	i.Type_Of_Insurance
+	invoice.Period_Start =			i.Period_Start
+	invoice.Period_End = 			i.Period_End
+	invoice.Terms_Of_Period = 		i.Terms_Of_Period
+	invoice.Remarks =				i.Remarks
+
+	err := db.Save(&invoice).Error 
+	if err != nil{
+		return err
+	}
+	return nil
+
+
 }
 
 func (i *Invoice) CreateInvoices(db *gorm.DB, invoices *Invoice) (*Invoice, error) {

@@ -191,6 +191,7 @@ func (server *Server) GetUnverifiedUserAction(w http.ResponseWriter, r *http.Req
 }
 
 func (server *Server) VerifyAndSetRoleUserAction(w http.ResponseWriter, r *http.Request) {
+	//jangan lupa ganti ke vars := mux.vars(r); userID := vars["user_id"]
 	user_id := r.FormValue("user_id")
 	role := r.FormValue("role")
 

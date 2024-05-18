@@ -27,6 +27,7 @@ func (server *Server) initializeRoutes() {
 	api.HandleFunc("/user/{user_id}", server.GetUserAction).Methods("GET")
 
 	api.HandleFunc("/invoice-list", server.Invoice).Methods("GET")
+	api.HandleFunc("/invoice/{invoice_id}", server.GetInvoiceByID).Methods("GET")
 	api.HandleFunc("/create-invoices", server.CreateInvoicesAction).Methods("POST")
 	api.HandleFunc("/delete-invoices/{invoice_id}", server.DeletedInvoicesAction).Methods("DELETE")
 
