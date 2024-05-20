@@ -30,7 +30,7 @@ func (server *Server) Invoice(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (server *Server) GetInvoiceByID(w http.ResponseWriter, r *http.Request)  {
+func (server *Server) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	invoice_ID := vars["invoices_id"]
 
@@ -159,10 +159,9 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-
 	/*
-		GET TOKEN USER LOGIN 
-	=================================
+			GET TOKEN USER LOGIN
+		=================================
 	*/
 	userID, err := auth.GetTokenUserLogin(r.Context())
 	if err != nil {
@@ -194,6 +193,8 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		Period_End:           p_End,
 		Terms_Of_Period:      terms_of_period,
 		Remarks:              remarks,
+		Created_At:           time.Now(),
+		Updated_At:            time.Now(),
 	}
 
 	_, err = invoices_M.CreateInvoices(server.DB, invoices)
@@ -273,7 +274,7 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 }
 
 func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
-	vars:= mux.Vars(r)
+	vars := mux.Vars(r)
 	invoiceID := vars["invoice_id"]
 
 	var err error
@@ -300,20 +301,19 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 	remarks := r.FormValue("remarks")
 
 	//installment form
-	due_date := r.FormValue("due_date")
-	ins_amount := r.FormValue("ins_amount")
+	// due_date := r.FormValue("due_date")
+	// ins_amount := r.FormValue("ins_amount")
 
 	//cum insured details form
-	items_name := r.FormValue("items_name")
-	sum_ins_amount := r.FormValue("sum_ins_amount")
-	notes := r.FormValue("notes")
+	// items_name := r.FormValue("items_name")
+	// sum_ins_amount := r.FormValue("sum_ins_amount")
+	// notes := r.FormValue("notes")
 
-
-	d_date, err := time.Parse(layoutTime, due_date)
-	if err != nil {
-		http.Error(w, "invalid periode start!", http.StatusBadRequest)
-		return
-	}
+	// d_date, err := time.Parse(layoutTime, due_date)
+	// if err != nil {
+	// 	http.Error(w, "invalid periode start!", http.StatusBadRequest)
+	// 	return
+	// }
 
 	p_Start, err := time.Parse(layoutTime, periode_start)
 	if err != nil {
@@ -366,22 +366,21 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	insAmountDecimal, err := convertToDecimal(ins_amount)
-	if err != nil {
-		http.Error(w, "invalid insured amount!", http.StatusBadRequest)
-		return
-	}
+	// insAmountDecimal, err := convertToDecimal(ins_amount)
+	// if err != nil {
+	// 	http.Error(w, "invalid insured amount!", http.StatusBadRequest)
+	// 	return
+	// }
 
-	sumInsAmountDecimal, err := convertToDecimal(sum_ins_amount)
-	if err != nil {
-		http.Error(w, "invalid insured amount!", http.StatusBadRequest)
-		return
-	}
-
+	// sumInsAmountDecimal, err := convertToDecimal(sum_ins_amount)
+	// if err != nil {
+	// 	http.Error(w, "invalid insured amount!", http.StatusBadRequest)
+	// 	return
+	// }
 
 	/*
-		GET TOKEN USER LOGIN 
-	=================================
+			GET TOKEN USER LOGIN
+		=================================
 	*/
 	userID, err := auth.GetTokenUserLogin(r.Context())
 	if err != nil {
@@ -413,15 +412,16 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 		Period_End:           p_End,
 		Terms_Of_Period:      terms_of_period,
 		Remarks:              remarks,
+		
 	}
 
 	err = invoices_M.UpdateInvoices(server.DB, invoiceID)
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		http.Error(w, "update invoice fail", http.StatusBadRequest)
 		return
 	}
-
+	fmt.Println(invoices)
 
 }
 

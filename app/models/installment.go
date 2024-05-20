@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -29,4 +30,14 @@ func (ins *Installment) CreateInstallment(db *gorm.DB, installment *Installment)
 		return nil, err
 	}
 	return installmentModels, nil
+}
+
+func (in *Installment) GetInstallmentByInvoiceID(db *gorm.DB, invoiceID string) (*[]Installment, error){
+	var installments []Installment
+	err := db.Debug().Where("invoice_id = ?", invoiceID).Find(&installments).Error
+	if err != nil{
+		fmt.Println(err.Error())
+		return nil, err
+	}
+	return &installments, nil
 }
