@@ -85,6 +85,10 @@ func (server *Server) SignInAction(w http.ResponseWriter, r *http.Request) {
 		// http.Redirect(w, r, "/login", http.StatusSeeOther )
 		return
 	}
+	if user.Verified == false{
+		http.Error(w, "Access denied", http.StatusForbidden)
+		return
+	}
 	if user.Role != models.StaffRole && user.Role != models.AdminRole && user.Role != models.AccessControlRole {
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return

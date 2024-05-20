@@ -3,10 +3,10 @@ package controllers
 import (
 	"fmt"
 	"log"
-	
+	_ "sync"
+
 	"net/http"
 	"os"
-	
 
 	"github.com/frangklynndruru/premily_backend/app/database/seeders"
 	"github.com/frangklynndruru/premily_backend/app/models"
@@ -40,6 +40,7 @@ type DBConfig struct {
 	DBName     string
 	DBPort     string
 }
+
 var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 var sessionUser = "user-session"
 
@@ -123,19 +124,21 @@ func (server *Server) InitCommands(config AppConfig, dbConfig DBConfig) {
 	}
 }
 
-/*Melakukan pengecekan apakah user sudah sukses untuk login atau tidak
-=========================*/
-func IsLogin(r *http.Request) bool{
+/*
+Melakukan pengecekan apakah user sudah sukses untuk login atau tidak
+=========================
+*/
+func IsLogin(r *http.Request) bool {
 	session, _ := store.Get(r, sessionUser)
-	if session.Values["user_id"] == nil{
+	if session.Values["user_id"] == nil {
 		return false
 	}
 	return true
 }
 
-func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *models.User{
+func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *models.User {
 
-	if !IsLogin(r){
+	if !IsLogin(r) {
 		return nil
 	}
 
@@ -143,16 +146,14 @@ func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *model
 
 	userModel := models.User{}
 	user, err := userModel.FindByID(server.DB, session.Values["user_id"].(string))
-	if err != nil{
+	if err != nil {
 		session.Values["user_id"] = nil
 		session.Save(r, w)
 		return nil
 	}
 
 	return user
-}  
-
-
+}
 
 // func MakePassword(password string)(string, error){
 // 	comparedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -166,6 +167,7 @@ func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *model
 type IDGenerator struct {
 	prefix string
 	count  int
+	// mu 	sync.Mutex
 }
 
 func NewIDGenerator(prefix string) *IDGenerator {
@@ -180,7 +182,20 @@ func (g *IDGenerator) NextID() string {
 	return fmt.Sprintf("%s-%s", g.prefix, g.pad(g.count, 5))
 }
 
+// func NewIDGenerator(prefix string) *IDGenerator {
+// 	return &IDGenerator{
+// 		prefix:  prefix,
+// 		count: 0,
+// 	}
+// }
+
+// func (g *IDGenerator) NextID() string {
+// 	g.mu.Lock()
+// 	defer g.mu.Unlock()
+
+//		g.count++
+//		return fmt.Sprintf("%s-%05d", g.prefix, g.count)
+//	}
 func (g *IDGenerator) pad(number, width int) string {
 	return fmt.Sprintf("%0*d", width, number)
 }
-

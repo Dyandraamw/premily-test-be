@@ -39,7 +39,7 @@ func (soa_d *Statement_Of_Account_Details) CreateSoaDetails(db *gorm.DB, soa_det
 		Status:               soa_details.Status,
 		Aging:                soa_details.Aging,
 		Created_At:           soa_details.Created_At,
-		Updated_At:           soa_details.Payment_Date,
+		Updated_At:           soa_details.Updated_At,
 	}
 
 	err := db.Debug().Create(&soa_Details_Model).Error

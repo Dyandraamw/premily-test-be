@@ -8,6 +8,7 @@ import (
 
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/shopspring/decimal"
 )
@@ -88,7 +89,7 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var idGeneratorSoaDetails = NewIDGenerator("SOA-Item")
+	// var idGeneratorSoaDetails = NewIDGenerator("SOA-Item")
 
 	for _, invoice := range *invoices {
 		installmentModel := models.Installment{}
@@ -101,8 +102,8 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 		for x, installment := range *installments_M {
 			instalmentStanding := x + 1
 
-			paymentDate := r.FormValue("payment date")
-			paymentAmount := r.FormValue("payment amount")
+			paymentDate := r.FormValue("payment_date")
+			paymentAmount := r.FormValue("payment_amount")
 
 			const layoutTime = "02-01-2006"
 
@@ -133,7 +134,9 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 
 			var status_SOA_Items string
 			paymentAllocation := p_amount_soa_details.Sub(installment.Ins_Amount)
-			if paymentAllocation.IsPositive() {
+			if paymentAllocation.Equal(decimal.Zero){
+				status_SOA_Items= "PAID"
+			}else if paymentAllocation.IsPositive() {
 				status_SOA_Items = "PAID"
 			} else {
 				status_SOA_Items = "OUTSTANDING"
@@ -143,13 +146,13 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			AgingDay := int(p_date_soa_details.Sub(currentDate).Hours() / 24)
 
 			if AgingDay < 0 {
-				fmt.Println("Sudah berlalu lebih dari %d hari", -AgingDay)
+				fmt.Printf("Sudah berlalu lebih dari %d hari", -AgingDay)
 			} else {
-				fmt.Println("Aging: %d hari", AgingDay)
+				fmt.Printf("Aging: %d hari", AgingDay)
 			}
 
 			soaDetails := &models.Statement_Of_Account_Details{
-				SOA_Details_ID:       idGeneratorSoaDetails.NextID(),
+				SOA_Details_ID:       uuid.New().String(),
 				SOA_ID:               SoA_ID,
 				Invoice_ID:           invoice.Invoice_ID,
 				Recipient:            invoice.Recipient,
@@ -172,26 +175,43 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
-		var result models.Invoice
-		err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?",(*invoices)[0].Invoice_ID).First(&result).Error
-		if err != nil {
-			http.Error(w, "Failed to retrieve updated invoice", http.StatusInternalServerError)
-			return
-		}
+		// var result models.Invoice
+		// err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?",(*invoices)[0].Invoice_ID).First(&result).Error
+		// if err != nil {
+		// 	http.Error(w, "Failed to retrieve updated invoice", http.StatusInternalServerError)
+		// 	return
+		// }
 
-		// Marshal the result into JSON
-		data, err := json.Marshal(result)
-		if err != nil {
-			http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
-			return
-		}
+		// // Marshal the result into JSON
+		// data, err := json.Marshal(result)
+		// if err != nil {
+		// 	http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
+		// 	return
+		// }
 
-		// Set response headers and write JSON data
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(data)
+		// // Set response headers and write JSON data
+		// w.Header().Set("Content-Type", "application/json")
+		// w.WriteHeader(http.StatusOK)
+		// w.Write(data)
+
 	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("SOA details added successfully"))
 
+}
+
+func (server *Server) DeleteSoaAction(w http.ResponseWriter, r *http.Request){
+	vars := mux.Vars(r)
+	soa_id := vars["soa_id"]
+
+	soa := &models.Statement_Of_Account{}
+	err := soa.DeleteSOA(server.DB, soa_id)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("SOA deleted successfully"))
 }
 
 /*
