@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	_ "net/http"
@@ -31,8 +32,8 @@ type Invoice struct {
 	Terms_Of_Period      string          `gorm:"size:255;not null"`
 	Remarks              string          `gorm:"type:text;not null"`
 
-	Installment         []Installment         `gorm:"foreignKey:Invoice_ID"`
-	Sum_Insured_Details []Sum_Insured_Details `gorm:"foreignKey:Invoice_ID"`
+	Installment         []Installment         `gorm:"foreignKey:Invoice_ID;constraint:OnUpdate,OnDelete:CASCADE"`
+	Sum_Insured_Details []Sum_Insured_Details `gorm:"foreignKey:Invoice_ID;constraint:OnUpdate,OnDelete:CASCADE"`
 	Payment_Status      Payment_Status        `gorm:"foreignKey:Invoice_ID"`
 
 	Created_At time.Time
@@ -93,7 +94,7 @@ func (i *Invoice) DeletedInvoices(db *gorm.DB, invoice_ID string) error {
 	return nil
 }
 
-func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string) error {
+func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []Installment, sum_insured []Sum_Insured_Details) error {
 	var invoice Invoice
 	if err := db.First(&invoice, "invoice_id = ?", invoice_ID).Error; err != nil {
 		fmt.Println("invoice tidak ditemukan - model")
@@ -123,6 +124,53 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string) error {
 	if err != nil {
 		return err
 	}
+
+	for _, installment := range installments {
+		var existInstallment Installment
+		err:= db.Where("installment_id = ? AND invoice_id = ?", installment.Installment_ID, invoice_ID).First(&existInstallment).Error
+
+		if err != nil{
+			if errors.Is(err, gorm.ErrRecordNotFound){
+				installment.Invoice_ID = invoice_ID
+				if err := db.Create(&installment).Error; err != nil {
+					return err
+				}
+			}else{
+				return err
+			}
+		}else{
+			existInstallment.Due_Date = installment.Due_Date
+			existInstallment.Ins_Amount = installment.Ins_Amount
+			if err := db.Save(&installment).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, sum_ins := range sum_insured{
+		var existSumIns Sum_Insured_Details
+		err := db.Where("Sum_Insured_ID = ? AND invoice_id", sum_ins.Sum_Insured_ID, invoice_ID).First(&existSumIns).Error
+		if err != nil{
+			if errors.Is(err, gorm.ErrRecordNotFound){
+				sum_ins.Invoice_ID = invoice_ID
+				if err := db.Create(&sum_ins).Error; err != nil{
+					return err
+				}else{
+					return err
+				}
+			}else{
+				existSumIns.Items_Name = sum_ins.Items_Name
+				existSumIns.Sum_Insured_Amount = sum_ins.Sum_Insured_Amount
+				existSumIns.Notes = sum_ins.Notes
+				err := db.Save(&sum_ins).Error
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+
 	return nil
 
 }

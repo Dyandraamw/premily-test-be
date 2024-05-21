@@ -29,8 +29,11 @@ func (server *Server) initializeRoutes() {
 	api.HandleFunc("/invoice-list", server.Invoice).Methods("GET")
 	api.HandleFunc("/invoice/{invoice_id}", server.GetInvoiceByID).Methods("GET")
 	api.HandleFunc("/create-invoices", server.CreateInvoicesAction).Methods("POST")
+	api.HandleFunc("/update-invoices/{invoice_id}", server.UpdateInvoices).Methods("POST")
 	api.HandleFunc("/delete-invoices/{invoice_id}", server.DeletedInvoicesAction).Methods("DELETE")
 
 	api.HandleFunc("/create-soa", server.CreateSoaAction).Methods("POST")
 	api.HandleFunc("/add-items/{soa_id}", server.AddItemSoaAction).Methods("POST")
+
+	
 }

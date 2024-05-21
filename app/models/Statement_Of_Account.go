@@ -14,7 +14,7 @@ type Statement_Of_Account struct {
 	Period_Start    time.Time `gorm:"not null"`
 	Period_End      time.Time `gorm:"not null"`
 
-	Statement_Of_Account_Details []Statement_Of_Account_Details `gorm:"foreignKey:SOA_ID;constraint:OnDelete:CASCADE"`
+	Statement_Of_Account_Details []Statement_Of_Account_Details `gorm:"foreignKey:SOA_ID;constraint:OnUpdate,OnDelete:CASCADE"`
 
 	Created_At time.Time
 	Updated_At time.Time
@@ -39,12 +39,12 @@ func (s *Statement_Of_Account) CreateNewSOA(db *gorm.DB, soa *Statement_Of_Accou
 	return soaModels, nil
 }
 
-func (s *Statement_Of_Account) DeleteSOA(db *gorm.DB, soa_id string) error  {
+func (s *Statement_Of_Account) DeleteSOA(db *gorm.DB, soa_id string) error {
 	soa := &Statement_Of_Account{}
-	if err := db.Debug().First(&soa, "soa_id = ? ", soa_id).Error; err != nil{
+	if err := db.Debug().First(&soa, "soa_id = ? ", soa_id).Error; err != nil {
 		return err
 	}
-	if err := db.Delete(&soa).Error; err != nil{
+	if err := db.Delete(&soa).Error; err != nil {
 		fmt.Printf("Fail!")
 		return err
 	}

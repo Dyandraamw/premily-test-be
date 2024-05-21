@@ -175,28 +175,28 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
-		// var result models.Invoice
-		// err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?",(*invoices)[0].Invoice_ID).First(&result).Error
-		// if err != nil {
-		// 	http.Error(w, "Failed to retrieve updated invoice", http.StatusInternalServerError)
-		// 	return
-		// }
-
-		// // Marshal the result into JSON
-		// data, err := json.Marshal(result)
-		// if err != nil {
-		// 	http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
-		// 	return
-		// }
-
-		// // Set response headers and write JSON data
-		// w.Header().Set("Content-Type", "application/json")
-		// w.WriteHeader(http.StatusOK)
-		// w.Write(data)
-
+		
 	}
+	var result models.Invoice
+	err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?",(*invoices)[0].Invoice_ID).First(&result).Error
+	if err != nil {
+		http.Error(w, "Failed to retrieve updated invoice", http.StatusInternalServerError)
+		return
+	}
+
+	// Marshal the result into JSON
+	data, err := json.Marshal(result)
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	// Set response headers and write JSON data
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("SOA details added successfully"))
+	w.Write(data)
+	// w.WriteHeader(http.StatusOK)
+	// w.Write([]byte("SOA details added successfully"))
 
 }
 

@@ -304,7 +304,7 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 	// due_date := r.FormValue("due_date")
 	// ins_amount := r.FormValue("ins_amount")
 
-	//cum insured details form
+	// cum insured details form
 	// items_name := r.FormValue("items_name")
 	// sum_ins_amount := r.FormValue("sum_ins_amount")
 	// notes := r.FormValue("notes")
@@ -414,14 +414,30 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 		Remarks:              remarks,
 		
 	}
+	installments := []models.Installment{}
+	sum_insured := []models.Sum_Insured_Details{}
 
-	err = invoices_M.UpdateInvoices(server.DB, invoiceID)
+	err = json.Unmarshal([]byte(r.FormValue("installments")), &installments)
+	if err != nil{
+		http.Error(w, "Parsing installments fail!", http.StatusBadRequest)
+		return
+	}
+	err = json.Unmarshal([]byte(r.FormValue("sum_insured")), &sum_insured)
+	if err != nil {
+		http.Error(w, "Parsing sum insured fail1", http.StatusBadRequest)
+		return 
+	}
+
+	err = invoices_M.UpdateInvoices(server.DB, invoiceID	, installments, sum_insured)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		http.Error(w, "update invoice fail", http.StatusBadRequest)
 		return
 	}
 	fmt.Println(invoices)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(invoices)
 
 }
 
