@@ -99,6 +99,27 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Get installments fail", http.StatusBadRequest)
 			return
 		}
+
+		selectedInvoiceID := r.FormValue("invoice_id")
+		if selectedInvoiceID == "" {
+			http.Error(w, "Please select invoice!", http.StatusBadRequest)
+			return
+		}
+
+		// Cari invoice yang dipilih
+		var selectedInvoice *models.Invoice
+		for _, invoiceList := range *invoices {
+			if invoiceList.Invoice_ID == selectedInvoiceID {
+				selectedInvoice = &invoice
+				break
+			}
+		}
+
+		// Jika invoice yang dipilih tidak ditemukan
+		if selectedInvoice == nil {
+			http.Error(w, "Selected invoice not found!", http.StatusBadRequest)
+			return
+		}
 		for x, installment := range *installments_M {
 			instalmentStanding := x + 1
 
@@ -134,9 +155,9 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 
 			var status_SOA_Items string
 			paymentAllocation := p_amount_soa_details.Sub(installment.Ins_Amount)
-			if paymentAllocation.Equal(decimal.Zero){
-				status_SOA_Items= "PAID"
-			}else if paymentAllocation.IsPositive() {
+			if paymentAllocation.Equal(decimal.Zero) {
+				status_SOA_Items = "PAID"
+			} else if paymentAllocation.IsPositive() {
 				status_SOA_Items = "PAID"
 			} else {
 				status_SOA_Items = "OUTSTANDING"
@@ -154,8 +175,8 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			soaDetails := &models.Statement_Of_Account_Details{
 				SOA_Details_ID:       uuid.New().String(),
 				SOA_ID:               SoA_ID,
-				Invoice_ID:           invoice.Invoice_ID,
-				Recipient:            invoice.Recipient,
+				Invoice_ID:           selectedInvoiceID,
+				Recipient:            selectedInvoice.Recipient,
 				Installment_Standing: uint(instalmentStanding),
 				Due_Date:             installment.Due_Date,
 				SOA_Amount:           installment.Ins_Amount,
@@ -175,10 +196,10 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
-		
+
 	}
 	var result models.Invoice
-	err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?",(*invoices)[0].Invoice_ID).First(&result).Error
+	err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?", (*invoices)[0].Invoice_ID).First(&result).Error
 	if err != nil {
 		http.Error(w, "Failed to retrieve updated invoice", http.StatusInternalServerError)
 		return
@@ -200,13 +221,13 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (server *Server) DeleteSoaAction(w http.ResponseWriter, r *http.Request){
+func (server *Server) DeleteSoaAction(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	soa_id := vars["soa_id"]
 
 	soa := &models.Statement_Of_Account{}
 	err := soa.DeleteSOA(server.DB, soa_id)
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

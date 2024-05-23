@@ -34,6 +34,10 @@ func (server *Server) initializeRoutes() {
 
 	api.HandleFunc("/create-soa", server.CreateSoaAction).Methods("POST")
 	api.HandleFunc("/add-items/{soa_id}", server.AddItemSoaAction).Methods("POST")
+	api.HandleFunc("/delete-soa/{soa-id}", server.DeleteSoaAction).Methods("DELETE")
+
+	api.HandleFunc("/create-new-payment-status", server.CreateNewPaymentStatus).Methods("POST")
+
 
 	
 }

@@ -1,10 +1,12 @@
 package models
 
 import (
+	
 	"errors"
 	"fmt"
 	"math/rand"
 	_ "net/http"
+	
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -223,3 +225,17 @@ func GenerateInvoiceID(db *gorm.DB, type_of_invoices Type) (string, error) {
 
 	return fmt.Sprintf("%s-%05d", prefix, randomNumber), nil
 }
+
+
+// MarshalDecimal mengonversi nilai decimal.Decimal ke dalam format string
+func MarshalDecimal(d decimal.Decimal) (string, error) {
+    // Mengonversi nilai decimal.Decimal menjadi string
+    return d.String(), nil
+}
+
+// UnmarshalDecimal mengonversi string ke dalam nilai decimal.Decimal
+func UnmarshalDecimal(s string) (decimal.Decimal, error) {
+    // Mengonversi string menjadi nilai decimal.Decimal
+    return decimal.NewFromString(s)
+}
+
