@@ -139,12 +139,12 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			convertToDecimal := func(s string) (decimal.Decimal, error) {
+			convertToDecimal := func(s string) (models.Decimal, error) {
 				d, err := decimal.NewFromString(s)
 				if err != nil {
-					return decimal.Decimal{}, err
+					return models.Decimal{}, err
 				}
-				return d, nil
+				return models.Decimal{Decimal: d}, nil
 			}
 
 			p_amount_soa_details, err := convertToDecimal(paymentAmount)
@@ -152,9 +152,14 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Invalid payment amount format", http.StatusBadRequest)
 				return
 			}
+			insAmountDecimal, err := decimal.NewFromString(installment.Ins_Amount.String())
+			if err != nil {
+				http.Error(w, "Invalid insured amount format", http.StatusBadRequest)
+				return
+			}
 
 			var status_SOA_Items string
-			paymentAllocation := p_amount_soa_details.Sub(installment.Ins_Amount)
+			paymentAllocation := p_amount_soa_details.Sub(insAmountDecimal)
 			if paymentAllocation.Equal(decimal.Zero) {
 				status_SOA_Items = "PAID"
 			} else if paymentAllocation.IsPositive() {

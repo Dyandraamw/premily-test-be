@@ -1,12 +1,11 @@
 package models
 
 import (
-	
 	"errors"
 	"fmt"
 	"math/rand"
 	_ "net/http"
-	
+
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -14,28 +13,28 @@ import (
 )
 
 type Invoice struct {
-	Invoice_ID           string          `gorm:"size:100;uniqueIndex;not null;primary_key"`
-	UserID               string          `gorm:"size:100"`
-	Type                 Type            `gorm:"not null"`
-	Recipient            string          `gorm:"size:255;not null"`
-	Address              string          `gorm:"type:text;not null"`
-	Desc_Premium         decimal.Decimal `gorm:"type:numeric(16,2);"`
-	Desc_Discount        decimal.Decimal `gorm:"type:numeric(16,2);"`
-	Desc_Admin_Cost      decimal.Decimal `gorm:"type:numeric(16,2);"`
-	Desc_Risk_Management decimal.Decimal `gorm:"type:numeric(16,2);"`
-	Desc_Brokage         decimal.Decimal `gorm:"type:numeric(16,2);"`
-	Desc_PPH             decimal.Decimal `gorm:"type:numeric(16,2);"`
-	Policy_Number        string          `gorm:"size:255;not null"`
-	Name_Of_Insured      string          `gorm:"size:255;not null"`
-	Address_Of_Insured   string          `gorm:"size:255;not null"`
-	Type_Of_Insurance    string          `gorm:"size:255;not null"`
-	Period_Start         time.Time       `gorm:"not null"`
-	Period_End           time.Time       `gorm:"not null"`
-	Terms_Of_Period      string          `gorm:"size:255;not null"`
-	Remarks              string          `gorm:"type:text;not null"`
+	Invoice_ID           string    `gorm:"size:100;uniqueIndex;not null;primary_key"`
+	UserID               string    `gorm:"size:100;default:''"`
+	Type                 Type      `gorm:"not null"`
+	Recipient            string    `gorm:"size:255;not null"`
+	Address              string    `gorm:"type:text;not null"`
+	Desc_Premium         Decimal   `gorm:"type:numeric(16,2);default:0.00"`
+	Desc_Discount        Decimal   `gorm:"type:numeric(16,2);default:0.00"`
+	Desc_Admin_Cost      Decimal   `gorm:"type:numeric(16,2);default:0.00"`
+	Desc_Risk_Management Decimal   `gorm:"type:numeric(16,2);default:0.00"`
+	Desc_Brokage         Decimal   `gorm:"type:numeric(16,2);default:0.00"`
+	Desc_PPH             Decimal   `gorm:"type:numeric(16,2);default:0.00"`
+	Policy_Number        string    `gorm:"size:255;not null;default:''"`
+	Name_Of_Insured      string    `gorm:"size:255;not null;default:''"`
+	Address_Of_Insured   string    `gorm:"size:255;not null;default:''"`
+	Type_Of_Insurance    string    `gorm:"size:255;not null;default:''"`
+	Period_Start         time.Time `gorm:"not null;default:current_timestamp"`
+	Period_End           time.Time `gorm:"not null;default:current_timestamp"`
+	Terms_Of_Period      string    `gorm:"size:255;not null;default:''"`
+	Remarks              string    `gorm:"type:text;not null;default:''"`
 
-	Installment         []Installment         `gorm:"foreignKey:Invoice_ID;constraint:OnUpdate,OnDelete:CASCADE"`
-	Sum_Insured_Details []Sum_Insured_Details `gorm:"foreignKey:Invoice_ID;constraint:OnUpdate,OnDelete:CASCADE"`
+	Installment         []Installment         `gorm:"foreignKey:Invoice_ID;constraint:OnDelete:CASCADE"`
+	Sum_Insured_Details []Sum_Insured_Details `gorm:"foreignKey:Invoice_ID;constraint:OnDelete:CASCADE"`
 	Payment_Status      Payment_Status        `gorm:"foreignKey:Invoice_ID"`
 
 	Created_At time.Time
@@ -48,6 +47,22 @@ const (
 	CreditType = "credit"
 	DebitType  = "debit"
 )
+
+func calculateTotalDesc(invoice Invoice) decimal.Decimal {
+    descPremium, _ := decimal.NewFromString(invoice.Desc_Premium.String())
+    descDiscount, _ := decimal.NewFromString(invoice.Desc_Discount.String())
+    descAdminCost, _ := decimal.NewFromString(invoice.Desc_Admin_Cost.String())
+    descRiskManagement, _ := decimal.NewFromString(invoice.Desc_Risk_Management.String())
+    descBrokage, _ := decimal.NewFromString(invoice.Desc_Brokage.String())
+    descPPH, _ := decimal.NewFromString(invoice.Desc_PPH.String())
+
+    total := descPremium.Add(descDiscount).
+             Add(descAdminCost).
+             Add(descRiskManagement).
+             Add(descBrokage).
+             Add(descPPH)
+    return total
+}
 
 func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 	var err error
@@ -66,7 +81,7 @@ func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 	return &invoice, nil
 
 }
-func (i *Invoice) GetInvoiceByIDmodel(db *gorm.DB, invoice_ID string) (*[]Invoice, error) {
+func (i *Invoice) GetInvoiceByIDmodel(db *gorm.DB, invoice_ID string) (*Invoice, error) {
 	var err error
 	var invoice []Invoice
 
@@ -129,18 +144,18 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []
 
 	for _, installment := range installments {
 		var existInstallment Installment
-		err:= db.Where("installment_id = ? AND invoice_id = ?", installment.Installment_ID, invoice_ID).First(&existInstallment).Error
+		err := db.Where("installment_id = ? AND invoice_id = ?", installment.Installment_ID, invoice_ID).First(&existInstallment).Error
 
-		if err != nil{
-			if errors.Is(err, gorm.ErrRecordNotFound){
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				installment.Invoice_ID = invoice_ID
 				if err := db.Create(&installment).Error; err != nil {
 					return err
 				}
-			}else{
+			} else {
 				return err
 			}
-		}else{
+		} else {
 			existInstallment.Due_Date = installment.Due_Date
 			existInstallment.Ins_Amount = installment.Ins_Amount
 			if err := db.Save(&installment).Error; err != nil {
@@ -149,18 +164,18 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []
 		}
 	}
 
-	for _, sum_ins := range sum_insured{
+	for _, sum_ins := range sum_insured {
 		var existSumIns Sum_Insured_Details
 		err := db.Where("Sum_Insured_ID = ? AND invoice_id", sum_ins.Sum_Insured_ID, invoice_ID).First(&existSumIns).Error
-		if err != nil{
-			if errors.Is(err, gorm.ErrRecordNotFound){
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				sum_ins.Invoice_ID = invoice_ID
-				if err := db.Create(&sum_ins).Error; err != nil{
+				if err := db.Create(&sum_ins).Error; err != nil {
 					return err
-				}else{
+				} else {
 					return err
 				}
-			}else{
+			} else {
 				existSumIns.Items_Name = sum_ins.Items_Name
 				existSumIns.Sum_Insured_Amount = sum_ins.Sum_Insured_Amount
 				existSumIns.Notes = sum_ins.Notes
@@ -171,7 +186,6 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []
 			}
 		}
 	}
-
 
 	return nil
 
@@ -226,16 +240,4 @@ func GenerateInvoiceID(db *gorm.DB, type_of_invoices Type) (string, error) {
 	return fmt.Sprintf("%s-%05d", prefix, randomNumber), nil
 }
 
-
-// MarshalDecimal mengonversi nilai decimal.Decimal ke dalam format string
-func MarshalDecimal(d decimal.Decimal) (string, error) {
-    // Mengonversi nilai decimal.Decimal menjadi string
-    return d.String(), nil
-}
-
-// UnmarshalDecimal mengonversi string ke dalam nilai decimal.Decimal
-func UnmarshalDecimal(s string) (decimal.Decimal, error) {
-    // Mengonversi string menjadi nilai decimal.Decimal
-    return decimal.NewFromString(s)
-}
 

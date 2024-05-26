@@ -1,16 +1,15 @@
 package models
 
 import (
-	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
 type Sum_Insured_Details struct {
-	Sum_Insured_ID     string          `gorm:"size:100;not null;primary_key"`
-	Invoice_ID         string          `gorm:"size:100"`
-	Items_Name         string          `gorm:"size:255;not null"`
-	Sum_Insured_Amount decimal.Decimal `gorm:"type:numeric(16,2);not null"`
-	Notes              string          `gorm:"size:255;not null"`
+	Sum_Insured_ID     string  `gorm:"size:100;not null;primary_key"`
+	Invoice_ID         string  `gorm:"size:100"`
+	Items_Name         string  `gorm:"size:255;not null"`
+	Sum_Insured_Amount Decimal `gorm:"type:numeric(16,2);default:0;not null"`
+	Notes              string  `gorm:"size:255;not null"`
 }
 
 func (SumIns *Sum_Insured_Details) CreateSumInsuredDetails(db *gorm.DB, sumInsured *Sum_Insured_Details) (*Sum_Insured_Details, error) {
@@ -28,3 +27,14 @@ func (SumIns *Sum_Insured_Details) CreateSumInsuredDetails(db *gorm.DB, sumInsur
 	}
 	return sumInsuredModels, nil
 }
+
+func (in *Installment) GetSumInsByInvoiceID(db *gorm.DB, invoiceID string) (*[]Sum_Insured_Details, error) {
+	var sum_ins []Sum_Insured_Details
+	err := db.Debug().Where("invoice_id = ?", invoiceID).Find(&sum_ins).Error
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+	return &installments, nil
+}
+

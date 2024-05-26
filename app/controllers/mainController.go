@@ -33,6 +33,11 @@ type AppConfig struct {
 	AppURL  string
 }
 
+type IDGenerator struct {
+	prefix string
+	count  int
+	// mu 	sync.Mutex
+}
 type DBConfig struct {
 	DBHost     string
 	DBUser     string
@@ -163,12 +168,6 @@ func (server *Server) CurrentUser(w http.ResponseWriter, r *http.Request) *model
 // func verifyPassword(password string, comparePassword string) bool {
 // 	return bcrypt.CompareHashAndPassword([]byte(comparePassword), []byte(password)) == nil
 // }
-
-type IDGenerator struct {
-	prefix string
-	count  int
-	// mu 	sync.Mutex
-}
 
 func NewIDGenerator(prefix string) *IDGenerator {
 	return &IDGenerator{

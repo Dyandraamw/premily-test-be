@@ -10,6 +10,7 @@ import (
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/gorilla/mux"
+	"github.com/jung-kurt/gofpdf"
 	"github.com/shopspring/decimal"
 )
 
@@ -108,12 +109,12 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Convert string to decimal.Decimal
-	convertToDecimal := func(s string) (decimal.Decimal, error) {
+	convertToDecimal := func(s string) (models.Decimal, error) {
 		d, err := decimal.NewFromString(s)
 		if err != nil {
-			return decimal.Decimal{}, err
+			return models.Decimal{}, err
 		}
-		return d, nil
+		return models.Decimal{Decimal: d}, nil
 	}
 
 	descPremiumDecimal, err := convertToDecimal(desc_premium)
@@ -194,7 +195,7 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		Terms_Of_Period:      terms_of_period,
 		Remarks:              remarks,
 		Created_At:           time.Now(),
-		Updated_At:            time.Now(),
+		Updated_At:           time.Now(),
 	}
 
 	_, err = invoices_M.CreateInvoices(server.DB, invoices)
@@ -327,12 +328,12 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert string to decimal.Decimal
-	convertToDecimal := func(s string) (decimal.Decimal, error) {
+	convertToDecimal := func(s string) (models.Decimal, error) {
 		d, err := decimal.NewFromString(s)
 		if err != nil {
-			return decimal.Decimal{}, err
+			return models.Decimal{}, err
 		}
-		return d, nil
+		return models.Decimal{Decimal: d}, nil
 	}
 
 	descPremiumDecimal, err := convertToDecimal(desc_premium)
@@ -412,23 +413,22 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 		Period_End:           p_End,
 		Terms_Of_Period:      terms_of_period,
 		Remarks:              remarks,
-		
 	}
 	installments := []models.Installment{}
 	sum_insured := []models.Sum_Insured_Details{}
 
 	err = json.Unmarshal([]byte(r.FormValue("installments")), &installments)
-	if err != nil{
+	if err != nil {
 		http.Error(w, "Parsing installments fail!", http.StatusBadRequest)
 		return
 	}
 	err = json.Unmarshal([]byte(r.FormValue("sum_insured")), &sum_insured)
 	if err != nil {
 		http.Error(w, "Parsing sum insured fail1", http.StatusBadRequest)
-		return 
+		return
 	}
 
-	err = invoices_M.UpdateInvoices(server.DB, invoiceID	, installments, sum_insured)
+	err = invoices_M.UpdateInvoices(server.DB, invoiceID, installments, sum_insured)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		http.Error(w, "update invoice fail", http.StatusBadRequest)
@@ -454,4 +454,66 @@ func (server *Server) DeletedInvoicesAction(w http.ResponseWriter, r *http.Reque
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Invoice deleted successfully"))
+}
+
+func (server *Server) downloadInvoice(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	invoiceID := vars["invoice_id"]
+
+	invoiceModel := models.Invoice{}
+	userModel := models.User{}
+	invoice, err := invoiceModel.GetInvoiceByIDmodel(server.DB, invoiceID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invoice not found!", http.StatusBadRequest)
+		return
+	}
+
+	pdf := gofpdf.New("P", "mm", "A4", "")
+
+	pdf.AddPage()
+
+	pdf.SetFont("Arial", "B", 16)
+	pdf.Cell(40, 10, userModel.CompanyName)
+
+	// Tambahkan informasi invoice
+	pdf.SetFont("Arial", "", 12)
+	pdf.Cell(40, 10, "Type: "+string(invoice.Type))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, "Desc_Premium: "+invoice.Desc_Premium.String())
+	pdf.Ln(10)
+	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Discount.String())
+	pdf.Ln(10)
+	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Admin_Cost.String())
+	pdf.Ln(10)
+	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Risk_Management.String())
+	pdf.Ln(10)
+	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Brokage.String())
+	pdf.Ln(10)
+	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_PPH.String())
+	pdf.Ln(10)
+
+	total, err := invoiceModel.calculateTotalDesc(invoice)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Summary fail!", http.StatusBadRequest)
+		return
+	}
+
+	pdf.Cell(40, 10, "Policy Number: "+invoice.Policy_Number)
+	pdf.Ln(10)
+
+	// Tampilkan informasi dari Sum_Insured_Details
+	sum_ins := models.Sum_Insured_Details{}
+	sumInsuredDetails := sum_ins.GetSumInsByInvoiceID(invoiceID)
+	for _, detail := range sumInsuredDetails {
+		pdf.Cell(40, 10, "Items Name: "+detail.Items_Name)
+		pdf.Ln(10)
+		pdf.Cell(40, 10, "Amount : "+detail.Sum_Insured_Amount)
+		pdf.Ln(10)
+		pdf.Cell(40, 10, "Notes : "+detail.Notes)
+		pdf.Ln(10)
+		// Tambahkan informasi lainnya dari Sum_Insured_Details
+	}
+
 }

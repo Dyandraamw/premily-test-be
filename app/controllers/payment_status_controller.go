@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	_ "encoding/json"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -55,7 +55,7 @@ func (server *Server) CreateNewPaymentStatus(w http.ResponseWriter, r *http.Requ
 	}
 
 	// var paymentShow models.Payment_Status
-	_, err = payment.CreateNewPayment(server.DB, &paymentS_M)
+	payShow, err := payment.CreateNewPayment(server.DB, &paymentS_M)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -74,11 +74,15 @@ func (server *Server) CreateNewPaymentStatus(w http.ResponseWriter, r *http.Requ
 	// 	http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
 	// 	return
 	// }
+	data, _ := json.Marshal(payShow)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 
 	// Set response headers and write JSON data
 	// w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Successfully!"))
+	// w.WriteHeader(http.StatusOK)
+	// w.Write([]byte("Successfully!"))
 
 	// Membentuk response JSON
 	// response := struct {

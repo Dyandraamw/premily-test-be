@@ -18,6 +18,7 @@ func UserFaker(db *gorm.DB) *models.User {
 		Phone:         faker.Phonenumber(),
 		Password:      faker.Password(),
 		CompanyName:   "PT Nusa Mandiri",
+		Verified:		true,
 		Role:          "staff",
 		RememberToken: "",
 		Created_At:    time.Now(),

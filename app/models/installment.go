@@ -2,19 +2,19 @@ package models
 
 import (
 	"fmt"
+	"log"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
 type Installment struct {
-	Installment_ID string          `gorm:"size:100;not null;primary_key"`
-	Invoice_ID     string          `gorm:"size:100"`
-	Due_Date       time.Time       `gorm:"not null"`
-	Ins_Amount     decimal.Decimal `gorm:"type:numeric(16,2);not null"`
+	Installment_ID string    `gorm:"size:100;not null;primary_key"`
+	Invoice_ID     string    `gorm:"size:100"`
+	Due_Date       time.Time `gorm:"not null;default:current_timestamp"`
+	Ins_Amount     Decimal   `gorm:"type:numeric(16,2);default:0;not null"`
 
-	Payment_Details []Payment_Details `gorm:"foreignKey:Installment_ID;constrain:OnUpdate, OnDelete:CASCADE"`
+	Payment_Details []Payment_Details `gorm:"foreignKey:Installment_ID;constraint:OnDelete:CASCADE"`
 }
 
 func (ins *Installment) CreateInstallment(db *gorm.DB, installment *Installment) (*Installment, error) {
@@ -32,12 +32,28 @@ func (ins *Installment) CreateInstallment(db *gorm.DB, installment *Installment)
 	return installmentModels, nil
 }
 
-func (in *Installment) GetInstallmentByInvoiceID(db *gorm.DB, invoiceID string) (*[]Installment, error){
+func (in *Installment) GetInstallmentByInvoiceID(db *gorm.DB, invoiceID string) (*[]Installment, error) {
 	var installments []Installment
 	err := db.Debug().Where("invoice_id = ?", invoiceID).Find(&installments).Error
-	if err != nil{
+	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
 	}
 	return &installments, nil
+}
+
+func calculateTotalInstallment(db *gorm.DB, invoiceID string) Decimal {
+    var totalInstallment Decimal
+    // Lakukan query ke database untuk mengambil total installment berdasarkan invoice_id
+    // Misalnya, menggunakan GORM:
+    var sumInstallment struct {
+        TotalInstallment Decimal
+    }
+    if err := db.Raw("SELECT SUM(ins_amount) AS total_installment FROM installments WHERE invoice_id = ?", invoiceID).Scan(&sumInstallment).Error; err != nil {
+        log.Fatalf("Failed to calculate total installment: %v", err)
+        // Atau sesuaikan dengan mekanisme error handling yang Anda gunakan
+		return Decimal{}
+    }
+    totalInstallment = sumInstallment.TotalInstallment
+    return totalInstallment
 }
