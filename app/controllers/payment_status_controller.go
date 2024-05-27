@@ -331,7 +331,7 @@ func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-		"payment_detail": payDetailShow add,
+		"payment_detail": payDetailShow,
 		"total":          total,
 		"payment_balance": paymentBalance,
 	}
