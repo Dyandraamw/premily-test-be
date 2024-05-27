@@ -34,7 +34,7 @@ func (ins *Installment) CreateInstallment(db *gorm.DB, installment *Installment)
 
 func (in *Installment) GetInstallmentByInvoiceID(db *gorm.DB, invoiceID string) (*[]Installment, error) {
 	var installments []Installment
-	err := db.Debug().Where("invoice_id = ?", invoiceID).Find(&installments).Error
+	err := db.Debug().Where("invoice_id = ?", in.Invoice_ID).Find(&installments).Error
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
@@ -57,3 +57,4 @@ func calculateTotalInstallment(db *gorm.DB, invoiceID string) Decimal {
     totalInstallment = sumInstallment.TotalInstallment
     return totalInstallment
 }
+

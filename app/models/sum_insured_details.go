@@ -2,6 +2,7 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"fmt"
 )
 
 type Sum_Insured_Details struct {
@@ -35,6 +36,6 @@ func (in *Installment) GetSumInsByInvoiceID(db *gorm.DB, invoiceID string) (*[]S
 		fmt.Println(err.Error())
 		return nil, err
 	}
-	return &installments, nil
+	return &sum_ins, nil
 }
 

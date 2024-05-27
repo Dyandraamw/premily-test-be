@@ -83,9 +83,9 @@ func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 }
 func (i *Invoice) GetInvoiceByIDmodel(db *gorm.DB, invoice_ID string) (*Invoice, error) {
 	var err error
-	var invoice []Invoice
+	var invoice Invoice
 
-	err = db.Debug().Preload("Installment").Preload("Sum_Insured_Details").First(&invoice, "invoice_id = ?", invoice_ID).Error
+	err = db.Debug().Preload("Installment").Preload("Sum_Insured_Details").First("invoice_id = ?", invoice_ID).Error
 	if err != nil {
 
 		return nil, err

@@ -10,7 +10,7 @@ import (
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/gorilla/mux"
-	"github.com/jung-kurt/gofpdf"
+	// "github.com/jung-kurt/gofpdf"
 	"github.com/shopspring/decimal"
 )
 
@@ -456,64 +456,64 @@ func (server *Server) DeletedInvoicesAction(w http.ResponseWriter, r *http.Reque
 	w.Write([]byte("Invoice deleted successfully"))
 }
 
-func (server *Server) downloadInvoice(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	invoiceID := vars["invoice_id"]
+// func (server *Server) downloadInvoice(w http.ResponseWriter, r *http.Request) {
+// 	vars := mux.Vars(r)
+// 	invoiceID := vars["invoice_id"]
 
-	invoiceModel := models.Invoice{}
-	userModel := models.User{}
-	invoice, err := invoiceModel.GetInvoiceByIDmodel(server.DB, invoiceID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		http.Error(w, "Invoice not found!", http.StatusBadRequest)
-		return
-	}
+// 	invoiceModel := models.Invoice{}
+// 	userModel := models.User{}
+// 	invoice, err := invoiceModel.GetInvoiceByIDmodel(server.DB, invoiceID)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		http.Error(w, "Invoice not found!", http.StatusBadRequest)
+// 		return
+// 	}
 
-	pdf := gofpdf.New("P", "mm", "A4", "")
+// 	pdf := gofpdf.New("P", "mm", "A4", "")
 
-	pdf.AddPage()
+// 	pdf.AddPage()
 
-	pdf.SetFont("Arial", "B", 16)
-	pdf.Cell(40, 10, userModel.CompanyName)
+// 	pdf.SetFont("Arial", "B", 16)
+// 	pdf.Cell(40, 10, userModel.CompanyName)
 
-	// Tambahkan informasi invoice
-	pdf.SetFont("Arial", "", 12)
-	pdf.Cell(40, 10, "Type: "+string(invoice.Type))
-	pdf.Ln(10)
-	pdf.Cell(40, 10, "Desc_Premium: "+invoice.Desc_Premium.String())
-	pdf.Ln(10)
-	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Discount.String())
-	pdf.Ln(10)
-	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Admin_Cost.String())
-	pdf.Ln(10)
-	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Risk_Management.String())
-	pdf.Ln(10)
-	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Brokage.String())
-	pdf.Ln(10)
-	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_PPH.String())
-	pdf.Ln(10)
+// 	// Tambahkan informasi invoice
+// 	pdf.SetFont("Arial", "", 12)
+// 	pdf.Cell(40, 10, "Type: "+string(invoice.Type))
+// 	pdf.Ln(10)
+// 	pdf.Cell(40, 10, "Desc_Premium: "+invoice.Desc_Premium.String())
+// 	pdf.Ln(10)
+// 	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Discount.String())
+// 	pdf.Ln(10)
+// 	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Admin_Cost.String())
+// 	pdf.Ln(10)
+// 	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Risk_Management.String())
+// 	pdf.Ln(10)
+// 	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_Brokage.String())
+// 	pdf.Ln(10)
+// 	pdf.Cell(40, 10, "Desc_Discount: "+invoice.Desc_PPH.String())
+// 	pdf.Ln(10)
 
-	total, err := invoiceModel.calculateTotalDesc(invoice)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		http.Error(w, "Summary fail!", http.StatusBadRequest)
-		return
-	}
+// 	total, err := invoiceModel.calculateTotalDesc(invoice)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		http.Error(w, "Summary fail!", http.StatusBadRequest)
+// 		return
+// 	}
 
-	pdf.Cell(40, 10, "Policy Number: "+invoice.Policy_Number)
-	pdf.Ln(10)
+// 	pdf.Cell(40, 10, "Policy Number: "+invoice.Policy_Number)
+// 	pdf.Ln(10)
 
-	// Tampilkan informasi dari Sum_Insured_Details
-	sum_ins := models.Sum_Insured_Details{}
-	sumInsuredDetails := sum_ins.GetSumInsByInvoiceID(invoiceID)
-	for _, detail := range sumInsuredDetails {
-		pdf.Cell(40, 10, "Items Name: "+detail.Items_Name)
-		pdf.Ln(10)
-		pdf.Cell(40, 10, "Amount : "+detail.Sum_Insured_Amount)
-		pdf.Ln(10)
-		pdf.Cell(40, 10, "Notes : "+detail.Notes)
-		pdf.Ln(10)
-		// Tambahkan informasi lainnya dari Sum_Insured_Details
-	}
+// 	// Tampilkan informasi dari Sum_Insured_Details
+// 	sum_ins := models.Sum_Insured_Details{}
+// 	sumInsuredDetails := sum_ins.GetSumInsByInvoiceID(invoiceID)
+// 	for _, detail := range sumInsuredDetails {
+// 		pdf.Cell(40, 10, "Items Name: "+detail.Items_Name)
+// 		pdf.Ln(10)
+// 		pdf.Cell(40, 10, "Amount : "+detail.Sum_Insured_Amount)
+// 		pdf.Ln(10)
+// 		pdf.Cell(40, 10, "Notes : "+detail.Notes)
+// 		pdf.Ln(10)
+// 		// Tambahkan informasi lainnya dari Sum_Insured_Details
+// 	}
 
-}
+// }
