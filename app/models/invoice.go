@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	_ "net/http"
 
@@ -85,9 +86,9 @@ func (i *Invoice) GetInvoiceByIDmodel(db *gorm.DB, invoice_ID string) (*Invoice,
 	var err error
 	var invoice Invoice
 
-	err = db.Debug().Preload("Installment").Preload("Sum_Insured_Details").First("invoice_id = ?", invoice_ID).Error
+	err = db.Debug().Model(&Invoice{}).Preload("Installment").Preload("Sum_Insured_Details").First(&invoice, "invoice_id = ?", invoice_ID).Error
 	if err != nil {
-
+		log.Printf("Error fetching invoice by ID: %v", err)
 		return nil, err
 	}
 

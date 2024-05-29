@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -122,12 +123,31 @@ func (server *Server) CreatePaymentStatus(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	
 	selectedInvoiceID := r.FormValue("invoice_id")
 	if selectedInvoiceID == "" {
 		http.Error(w, "Please select an invoice!", http.StatusBadRequest)
 		return
 	}
-	invoice, err := invoiceModel.GetInvoiceByIDmodel(server.DB, selectedInvoiceID)
+
+	log.Printf("Selected Invoice ID: %s", selectedInvoiceID)
+
+	// Cari invoice yang dipilih
+	var selectedInvoice *models.Invoice
+	for x, invoice := range *invoices {
+		if invoice.Invoice_ID == selectedInvoiceID {
+			selectedInvoice = &(*invoices)[x]
+			break
+		}
+	}
+
+	// Jika invoice yang dipilih tidak ditemukan
+	if selectedInvoice == nil {
+		http.Error(w, "Selected invoice not found!", http.StatusBadRequest)
+		return
+	}
+	
+	_, err = invoiceModel.GetInvoiceByIDmodel(server.DB, selectedInvoiceID)
 	if err != nil {
 		http.Error(w, "Invoice not found!", http.StatusNotFound)
 		return
@@ -138,6 +158,7 @@ func (server *Server) CreatePaymentStatus(w http.ResponseWriter, r *http.Request
 	userID, err := auth.GetTokenUserLogin(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
 	}
 
 	paymentS := &models.Payment_Status{}
@@ -160,50 +181,62 @@ func (server *Server) CreatePaymentStatus(w http.ResponseWriter, r *http.Request
 	}
 
 	// payment_M := models.Payment_Status{}
-	payShow, err := paymentS.CreateNewPayment(server.DB)
+	_, err = paymentS.CreateNewPayment(server.DB)
 	if err != nil {
+
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Add Payment fail-control", http.StatusBadRequest)
 		return
 	}
 
-	// Prepare installment information
-	type InstallmentInfo struct {
-		InstallmentID string         `json:"installment_id"`
-		DueDate       time.Time      `json:"due_date"`
-		InsAmount     models.Decimal `json:"ins_amount"`
-		Total         models.Decimal `json:"total"`
-	}
-
-	var installmentInfos []InstallmentInfo
-	for _, installment := range invoice.Installment {
-		total, err := models.GetTotalWithAdjustments(server.DB, installment.Installment_ID, installment.Ins_Amount)
-		if err != nil {
-			http.Error(w, "Error calculating total with adjustments", http.StatusInternalServerError)
-			return
-		}
-
-		installmentInfos = append(installmentInfos, InstallmentInfo{
-			InstallmentID: installment.Installment_ID,
-			DueDate:       installment.Due_Date,
-			InsAmount:     installment.Ins_Amount,
-			Total:         total,
-		})
-	}
-
-	responseData := struct {
-		PaymentStatus   *models.Payment_Status `json:"payment_status"`
-		InstallmentInfo []InstallmentInfo      `json:"installment_info"`
-	}{
-		PaymentStatus:   payShow,
-		InstallmentInfo: installmentInfos,
-	}
-
-	response, _ := json.Marshal(responseData)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
+	
+	 // Query invoice dari database berdasarkan selectedInvoiceID
+	 var invoice models.Invoice
+	 err = server.DB.Preload("Installment").First(&invoice, "invoice_id = ?", selectedInvoiceID).Error
+	 if err != nil {
+		 http.Error(w, "Error fetching invoice data", http.StatusInternalServerError)
+		 return
+	 }
+ 
+	 // Menyiapkan data response untuk installments
+	 type InstallmentInfo struct {
+		 InstallmentID string         `json:"installment_id"`
+		 DueDate       time.Time      `json:"due_date"`
+		 InsAmount     models.Decimal `json:"ins_amount"`
+	 }
+ 
+	 var installmentInfos []InstallmentInfo
+	 for _, installment := range invoice.Installment {
+		 installmentInfos = append(installmentInfos, InstallmentInfo{
+			 InstallmentID: installment.Installment_ID,
+			 DueDate:       installment.Due_Date,
+			 InsAmount:     installment.Ins_Amount,
+		 })
+	 }
+ 
+	 // Marshal data response ke JSON
+	 responseData := struct {
+		 InvoiceID       string            `json:"invoice_id"`
+		 InstallmentInfo []InstallmentInfo `json:"installment_info"`
+	 }{
+		 InvoiceID:       selectedInvoiceID,
+		 InstallmentInfo: installmentInfos,
+	 }
+ 
+	 response, err := json.Marshal(responseData)
+	 if err != nil {
+		 http.Error(w, "Error marshaling JSON response", http.StatusInternalServerError)
+		 return
+	 }
+ 
+	 // Set header dan kirim response
+	 w.Header().Set("Content-Type", "application/json")
+	 w.WriteHeader(http.StatusOK)
+	 w.Write(response)
 
 }
+
+
 
 func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 	installmentID := r.FormValue("installment_id")
@@ -212,62 +245,44 @@ func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 
 	if installmentID == "" || p_date_detail == "" || p_amount_detail == "" {
 		http.Error(w, "Please fill the required fields!", http.StatusSeeOther)
-
 		return
 	}
 
 	var installment models.Installment
-	err := server.DB.Preload("Payment_Details").First(&installment, "installment_id", installmentID).Error
+	err := server.DB.Preload("Payment_Details").First(&installment, "installment_id = ?", installmentID).Error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Convert string to decimal.Decimal
-	convertToDecimal := func(s string) (models.Decimal, error) {
-		d, err := decimal.NewFromString(s)
-		if err != nil {
-			return models.Decimal{}, err
-		}
-		return models.Decimal{Decimal: d}, nil
+	convertToDecimal := func(s string) (decimal.Decimal, error) {
+		return decimal.NewFromString(s)
 	}
 
 	const layoutTime = "02-01-2006"
 	pay_date, err := time.Parse(layoutTime, p_date_detail)
 	if err != nil {
-		http.Error(w, "invalid periode start!", http.StatusBadRequest)
+		http.Error(w, "invalid payment date!", http.StatusBadRequest)
 		return
 	}
 
 	pay_amount, err := convertToDecimal(p_amount_detail)
 	if err != nil {
-		http.Error(w, "invalid description premium!", http.StatusBadRequest)
+		http.Error(w, "invalid payment amount!", http.StatusBadRequest)
 		return
 	}
 
-	var prevBalance, paymentAllocation models.Decimal
+	var prevBalance decimal.Decimal
 	for _, detail := range installment.Payment_Details {
-		payAmountStr := detail.Pay_Amount.String()
-		payAmount, err := convertToDecimal(payAmountStr)
-		if err != nil {
-			http.Error(w, "invalid pay amount!", http.StatusBadRequest)
-			return
-		}
-
-		// Konversi decimal.Decimal menjadi models.Decimal
-		// payAmountModel := models.Decimal{Decimal: *payAmount}
-
-		// Operasi matematika dengan models.Decimal
-		prevBalance = models.Decimal{Decimal: prevBalance.Add(payAmount.Decimal)}
-
+		prevBalance = prevBalance.Add(detail.Pay_Amount.Decimal)
 	}
 
+	var paymentAllocation decimal.Decimal
 	if prevBalance.LessThan(decimal.Zero) {
 		paymentAllocation = pay_amount
 	} else {
-		// paymentAllocation = prevBalance.Sub(pay_amount)
-		paymentAllocation = models.Decimal{Decimal: prevBalance.Decimal.Sub(pay_amount.Decimal)}
-
+		paymentAllocation = prevBalance.Sub(pay_amount)
 	}
 
 	var idGeneratorPaymentDetail = NewIDGenerator("Payment-Details")
@@ -282,7 +297,7 @@ func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 				Pay_Detail_ID:  payDetailID,
 				Installment_ID: installmentID,
 				Pay_Date:       pay_date,
-				Pay_Amount:     pay_amount,
+				Pay_Amount:     models.Decimal{Decimal: pay_amount},
 				Created_At:     time.Now(),
 				Updated_At:     time.Now(),
 			}
@@ -298,21 +313,11 @@ func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var paymentStatus models.Payment_Status
-	err = server.DB.Preload("Adjustment").First(&paymentStatus, "invoice_id", installment.Invoice_ID).Error
+	err = server.DB.Preload("Adjustments").First(&paymentStatus, "invoice_id = ?", installment.Invoice_ID).Error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	// var total models.Decimal
-	// if len(paymentStatus.Adjustment) == 0 {
-
-	// 	total = installment.Ins_Amount.Decimal
-	// } else {
-	// 	for _, adj := range paymentStatus.Adjustment {
-	// 		total = models.Decimal{Decimal: total.Add(adj.AdjustmentAmount)}
-	// 	}
-	// }
 
 	var total decimal.Decimal
 	if len(paymentStatus.Adjustment) == 0 {
@@ -325,16 +330,15 @@ func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 
 	paymentBalance := decimal.Zero
 	if prevBalance.LessThan(decimal.Zero) {
-		paymentBalance = paymentAllocation.Add(prevBalance.Decimal)
+		paymentBalance = paymentAllocation.Add(prevBalance)
 	} else {
 		paymentBalance = paymentAllocation.Sub(total)
 	}
 
 	response := map[string]interface{}{
-		"payment_detail": payDetailShow,
-		"total":          total,
+		"payment_detail":  payDetailShow,
+		"total":           total,
 		"payment_balance": paymentBalance,
 	}
 	json.NewEncoder(w).Encode(response)
-
 }
