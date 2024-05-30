@@ -18,21 +18,23 @@ type Adjustment struct {
 	Created_At        time.Time
 	Updated_At        time.Time
 }
-/*
-func GetTotalWithAdjustments(db *gorm.DB, installmentID string, insAmount Decimal) (Decimal, error) {
-	var adjustments []Adjustment
-	err := db.Where("installment_id = ?", installmentID).Find(&adjustments).Error
-	if err != nil {
-		return Decimal{decimal.Zero}, err
-	}
 
-	total := insAmount
-	for _, adj := range adjustments {
-		total = Decimal{total.Add(adj.Adjustment_Amount.Decimal)}
-	}
-	return total, nil
+func (adjustment *Adjustment) CreateAdjustment(db *gorm.DB, adjust *Adjustment) (*Adjustment, error)  {
+    adjustM := &Adjustment{
+        Adjustment_ID: adjust.Adjustment_ID,
+        Payment_Status_ID: adjust.Payment_Status_ID,
+        Adjustment_Title: adjust.Adjustment_Title,
+        Adjustment_Amount: adjust.Adjustment_Amount,
+        Created_At: adjust.Created_At,
+        Updated_At: adjust.Updated_At,
+    }
+
+    err := db.Debug().Create(&adjustM).Error
+    if err != nil {
+        return nil, err
+    }
+    return adjustM, nil
 }
-*/
 
 func GetTotalWithAdjustments(db *gorm.DB, selectedInvoiceID string, installmentID string, insAmount Decimal) (Decimal, error) {
     var invoice Invoice
