@@ -38,7 +38,8 @@ func (server *Server) initializeRoutes() {
 
 	api.HandleFunc("/create-new-payment-status", server.CreatePaymentStatus).Methods("POST")
 	api.HandleFunc("/add-payment", server.AddPayment).Methods("POST")
-
+	api.HandleFunc("/add-adjustment/{payment_status_id}", server.AddAjustment).Methods("POST")
+	
 
 	
 }

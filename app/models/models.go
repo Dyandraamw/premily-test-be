@@ -16,6 +16,8 @@ createPaymentStatus() {
 // endpoint 
 getPaymentStatus() {
 	resultPD, _ := db.getAllPaymentData(); // expected: status = pending
+	resultPD :+ server.DB.getInoice.getInstallment.
+
 	
 	// adjustment
 	rowAdj, totalAdj := adjustmentCalculation()
