@@ -3,13 +3,16 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	_ "math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/gorilla/mux"
+
 	// "github.com/jung-kurt/gofpdf"
 	"github.com/shopspring/decimal"
 )
@@ -50,7 +53,33 @@ func (server *Server) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
 func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Request) {
 
 	var err error
-	const layoutTime = "02-01-2006"
+	const layoutTime = "2006-01-02"
+
+	file, company_p, err := r.FormFile("comp_pict")
+	if err != nil {
+		http.Error(w, "Failed to get image", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Buat file kosong di server untuk menulis gambar yang diterima
+	outFile, err := os.Create("/app/images/" + company_p.Filename)
+	if err != nil {
+		http.Error(w, "Failed to create file", http.StatusInternalServerError)
+		return
+	}
+	defer outFile.Close()
+
+	// Salin data gambar dari permintaan ke file baru di server
+	_, err = io.Copy(outFile, file)
+	if err != nil {
+		http.Error(w, "Failed to copy image", http.StatusInternalServerError)
+		return
+	}
+
+	company_name := r.FormValue("comp_name")
+	company_address := r.FormValue("comp_address")
+	company_contact := r.FormValue("comp_contact")
 
 	typeInvoice := r.FormValue("typeInvoice")
 	recipient := r.FormValue("recipient")
@@ -62,6 +91,8 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	desc_risk_management := r.FormValue("desc_risk_management")
 	desc_brokage := r.FormValue("desc_brokage")
 	desc_pph := r.FormValue("desc_pph")
+
+	total_premium_due := r.FormValue("total_premium_due")
 
 	policy_number := r.FormValue("policy_number")
 	name_of_insured := r.FormValue("name_of_insured")
@@ -87,8 +118,8 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if typeInvoice == "" || recipient == "" || address == "" || desc_premium == "" || desc_discount == "" ||
-		desc_admin_cost == "" || desc_risk_management == "" || desc_brokage == "" || desc_pph == "" || policy_number == "" ||
+	if company_name == "" || company_address == "" ||company_contact == "" || typeInvoice == "" || recipient == "" || address == "" || desc_premium == "" || desc_discount == "" ||
+		desc_admin_cost == "" || desc_risk_management == "" || desc_brokage == "" || desc_pph == "" || total_premium_due == "" || policy_number == "" ||
 		name_of_insured == "" || address_of_insured == "" || type_of_insurance == "" ||
 		periode_start == "" || periode_end == "" || terms_of_period == "" || remarks == "" || due_date == "" || ins_amount == "" ||
 		items_name == "" || sum_ins_amount == "" || notes == "" {
@@ -147,6 +178,11 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "invalid description pph!", http.StatusBadRequest)
 		return
 	}
+	totalPremDue, err := convertToDecimal(total_premium_due)
+	if err != nil {
+		http.Error(w, "invalid total_premium_due !", http.StatusBadRequest)
+		return
+	}
 
 	insAmountDecimal, err := convertToDecimal(ins_amount)
 	if err != nil {
@@ -177,15 +213,20 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	invoices := &models.Invoice{
 		Invoice_ID:           invoice_ID_Generate,
 		UserID:               userID,
+		Company_Picture: "/app/images" + company_p.Filename,
+		Company_Name: company_name,
+		Company_Address: company_address,
+		Company_Contact: company_contact,
 		Type:                 models.Type(typeInvoice),
 		Recipient:            recipient,
 		Address:              address,
-		Desc_Premium:         descPremiumDecimal,
+		Net_Premium:         descPremiumDecimal,
 		Desc_Discount:        descDiscountDecimal,
 		Desc_Admin_Cost:      descAdminCostDecimal,
 		Desc_Risk_Management: descRiskManagementDecimal,
 		Desc_Brokage:         descBrokageDecimal,
 		Desc_PPH:             descPPHDecimal,
+		Total_Premium_Due: totalPremDue,
 		Policy_Number:        policy_number,
 		Name_Of_Insured:      name_of_insured,
 		Address_Of_Insured:   address_of_insured,
@@ -279,7 +320,7 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 	invoiceID := vars["invoice_id"]
 
 	var err error
-	const layoutTime = "02-01-2006"
+	const layoutTime = "2006-01-02"
 
 	typeInvoice := r.FormValue("typeInvoice")
 	recipient := r.FormValue("recipient")
@@ -389,17 +430,17 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 	}
 
 	invoices_M := models.Invoice{}
-	invoice_ID_Generate, err := models.GenerateInvoiceID(server.DB, models.Type(typeInvoice))
-	if err != nil {
-		http.Error(w, "Create invoices fail - ID Fail!", http.StatusSeeOther)
-	}
+	// invoice_ID_Generate, err := models.GenerateInvoiceID(server.DB, models.Type(typeInvoice))
+	// if err != nil {
+	// 	http.Error(w, "Create invoices fail - ID Fail!", http.StatusSeeOther)
+	// }
 	invoices := &models.Invoice{
-		Invoice_ID:           invoice_ID_Generate,
+		Invoice_ID:           invoiceID,
 		UserID:               userID,
 		Type:                 models.Type(typeInvoice),
 		Recipient:            recipient,
 		Address:              address,
-		Desc_Premium:         descPremiumDecimal,
+		Net_Premium:         descPremiumDecimal,
 		Desc_Discount:        descDiscountDecimal,
 		Desc_Admin_Cost:      descAdminCostDecimal,
 		Desc_Risk_Management: descRiskManagementDecimal,

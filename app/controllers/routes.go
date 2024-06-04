@@ -23,7 +23,9 @@ func (server *Server) initializeRoutes() {
 	api.HandleFunc("/sign-out", server.SignOutAction).Methods("POST")
 
 	api.HandleFunc("/unverified-users", server.GetUnverifiedUserAction).Methods("GET")
-	api.HandleFunc("/verify-user", server.VerifyAndSetRoleUserAction).Methods("POST")
+	api.HandleFunc("/unverified-users", server.GetUnroleUserAction).Methods("GET")
+	api.HandleFunc("/verify-user/", server.VerifyUserAction).Methods("POST")
+	api.HandleFunc("/verify-user/{user_id}", server.SetUserRoleAction).Methods("POST")
 	api.HandleFunc("/user/{user_id}", server.GetUserAction).Methods("GET")
 
 	api.HandleFunc("/invoice-list", server.Invoice).Methods("GET")

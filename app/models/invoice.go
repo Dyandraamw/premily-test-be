@@ -9,22 +9,26 @@ import (
 
 	"time"
 
-	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
 type Invoice struct {
 	Invoice_ID           string    `gorm:"size:100;uniqueIndex;not null;primary_key"`
 	UserID               string    `gorm:"size:100;default:''"`
+	Company_Picture      string    `gorm:"size:255"`
+	Company_Name         string    `gorm:"size:255;not null"`
+	Company_Address      string    `gorm:"type:text;not null"`
+	Company_Contact      string    `gorm:"size:255; not null"`
 	Type                 Type      `gorm:"not null"`
 	Recipient            string    `gorm:"size:255;not null"`
 	Address              string    `gorm:"type:text;not null"`
-	Desc_Premium         Decimal   `gorm:"type:numeric(16,2);default:0.00"`
+	Net_Premium          Decimal   `gorm:"type:numeric(16,2);default:0.00"`
 	Desc_Discount        Decimal   `gorm:"type:numeric(16,2);default:0.00"`
 	Desc_Admin_Cost      Decimal   `gorm:"type:numeric(16,2);default:0.00"`
 	Desc_Risk_Management Decimal   `gorm:"type:numeric(16,2);default:0.00"`
 	Desc_Brokage         Decimal   `gorm:"type:numeric(16,2);default:0.00"`
 	Desc_PPH             Decimal   `gorm:"type:numeric(16,2);default:0.00"`
+	Total_Premium_Due    Decimal   `gorm:"type:numeric(16,2);default:0.00"`
 	Policy_Number        string    `gorm:"size:255;not null;default:''"`
 	Name_Of_Insured      string    `gorm:"size:255;not null;default:''"`
 	Address_Of_Insured   string    `gorm:"size:255;not null;default:''"`
@@ -49,21 +53,21 @@ const (
 	DebitType  = "debit"
 )
 
-func calculateTotalDesc(invoice Invoice) decimal.Decimal {
-    descPremium, _ := decimal.NewFromString(invoice.Desc_Premium.String())
-    descDiscount, _ := decimal.NewFromString(invoice.Desc_Discount.String())
-    descAdminCost, _ := decimal.NewFromString(invoice.Desc_Admin_Cost.String())
-    descRiskManagement, _ := decimal.NewFromString(invoice.Desc_Risk_Management.String())
-    descBrokage, _ := decimal.NewFromString(invoice.Desc_Brokage.String())
-    descPPH, _ := decimal.NewFromString(invoice.Desc_PPH.String())
+// func calculateTotalDesc(invoice Invoice) decimal.Decimal {
+//     descPremium, _ := decimal.NewFromString(invoice.Net_Premium.String())
+//     descDiscount, _ := decimal.NewFromString(invoice.Desc_Discount.String())
+//     descAdminCost, _ := decimal.NewFromString(invoice.Desc_Admin_Cost.String())
+//     descRiskManagement, _ := decimal.NewFromString(invoice.Desc_Risk_Management.String())
+//     descBrokage, _ := decimal.NewFromString(invoice.Desc_Brokage.String())
+//     descPPH, _ := decimal.NewFromString(invoice.Desc_PPH.String())
 
-    total := descPremium.Add(descDiscount).
-             Add(descAdminCost).
-             Add(descRiskManagement).
-             Add(descBrokage).
-             Add(descPPH)
-    return total
-}
+//     total := descPremium.Add(descDiscount).
+//              Add(descAdminCost).
+//              Add(descRiskManagement).
+//              Add(descBrokage).
+//              Add(descPPH)
+//     return total
+// }
 
 func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 	var err error
@@ -121,7 +125,7 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []
 	invoice.Type = i.Type
 	invoice.Recipient = i.Recipient
 	invoice.Address = i.Address
-	invoice.Desc_Premium = i.Desc_Premium
+	invoice.Net_Premium = i.Net_Premium
 	invoice.Desc_Discount = i.Desc_Discount
 	invoice.Desc_Admin_Cost = i.Desc_Admin_Cost
 	invoice.Desc_Risk_Management = i.Desc_Risk_Management
@@ -196,10 +200,14 @@ func (i *Invoice) CreateInvoices(db *gorm.DB, invoices *Invoice) (*Invoice, erro
 	invoicesModels := &Invoice{
 		Invoice_ID:           invoices.Invoice_ID,
 		UserID:               invoices.UserID,
+		Company_Picture:      invoices.Company_Picture,
+		Company_Name:         invoices.Company_Name,
+		Company_Address:      invoices.Company_Address,
+		Company_Contact:      invoices.Company_Contact,
 		Type:                 invoices.Type,
 		Recipient:            invoices.Recipient,
 		Address:              invoices.Address,
-		Desc_Premium:         invoices.Desc_Premium,
+		Net_Premium:          invoices.Net_Premium,
 		Desc_Discount:        invoices.Desc_Discount,
 		Desc_Admin_Cost:      invoices.Desc_Admin_Cost,
 		Desc_Risk_Management: invoices.Desc_Risk_Management,
@@ -240,5 +248,3 @@ func GenerateInvoiceID(db *gorm.DB, type_of_invoices Type) (string, error) {
 
 	return fmt.Sprintf("%s-%05d", prefix, randomNumber), nil
 }
-
-

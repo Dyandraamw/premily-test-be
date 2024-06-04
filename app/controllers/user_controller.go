@@ -3,7 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 
 	"regexp"
 
@@ -61,10 +63,10 @@ func (server *Server) SignInAction(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("email")
 	password := r.FormValue("password")
+	rememberMe := r.FormValue("remember_me") == "true"
 
 	user, err := userModel.FindByEmail(server.DB, email, password)
 	if err != nil {
-
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		// http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -80,12 +82,11 @@ func (server *Server) SignInAction(w http.ResponseWriter, r *http.Request) {
 	var compare_password = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
 	if compare_password == nil {
-
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		// http.Redirect(w, r, "/login", http.StatusSeeOther )
 		return
 	}
-	if user.Verified == false{
+	if user.Verified == "pending" {
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
@@ -95,7 +96,7 @@ func (server *Server) SignInAction(w http.ResponseWriter, r *http.Request) {
 	}
 	// fmt.Println("Lolos PW")
 
-	tokenJWT, err := auth.GenerateJWT(user.UserID)
+	tokenJWT, err := auth.GenerateJWT(user.UserID, rememberMe)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -140,6 +141,28 @@ func (server *Server) SignUpAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	file, image, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "Failed to get image", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Buat file kosong di server untuk menulis gambar yang diterima
+	outFile, err := os.Create("/app/images/" + image.Filename)
+	if err != nil {
+		http.Error(w, "Failed to create file", http.StatusInternalServerError)
+		return
+	}
+	defer outFile.Close()
+
+	// Salin data gambar dari permintaan ke file baru di server
+	_, err = io.Copy(outFile, file)
+	if err != nil {
+		http.Error(w, "Failed to copy image", http.StatusInternalServerError)
+		return
+	}
+
 	if err := ValidatePassword(password); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -160,6 +183,7 @@ func (server *Server) SignUpAction(w http.ResponseWriter, r *http.Request) {
 	makePassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	params := &models.User{
 		UserID:      uuid.New().String(),
+		Image:       "/app/images" + image.Filename,
 		Username:    username,
 		Name:        name,
 		Email:       email,
@@ -167,7 +191,7 @@ func (server *Server) SignUpAction(w http.ResponseWriter, r *http.Request) {
 		Password:    string(makePassword),
 		CompanyName: company,
 		Role:        "pending",
-		Verified:    false,
+		Verified:    "pending",
 	}
 
 	user, err := userModel.CreateUser(server.DB, params)
@@ -193,19 +217,50 @@ func (server *Server) GetUnverifiedUserAction(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
+func (server *Server) GetUnroleUserAction(w http.ResponseWriter, r *http.Request) {
+	userModel := models.User{}
+	users, err := userModel.GetUnroleUser(server.DB)
+	if err != nil {
+		http.Error(w, "Failed to get unverified users", http.StatusBadRequest)
+	}
 
-func (server *Server) VerifyAndSetRoleUserAction(w http.ResponseWriter, r *http.Request) {
+	data, _ := json.Marshal(users)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+func (server *Server) VerifyUserAction(w http.ResponseWriter, r *http.Request) {
 	//jangan lupa ganti ke vars := mux.vars(r); userID := vars["user_id"]
-	user_id := r.FormValue("user_id")
+	vars := mux.Vars(r)
+	user_id := vars["user_id"]
+	verify := r.FormValue("verify")
+
+	if verify == "" {
+		http.Error(w, "Please set the verify of user", http.StatusBadRequest)
+		return
+	}
+
+	userModel := models.User{}
+	if err := userModel.VerifyUser(server.DB, user_id, models.Verify(verify)); err != nil {
+		http.Error(w, "Verify user fail!", http.StatusConflict)
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("User successfully verified"))
+}
+func (server *Server) SetUserRoleAction(w http.ResponseWriter, r *http.Request) {
+	//jangan lupa ganti ke vars := mux.vars(r); userID := vars["user_id"]
+	vars := mux.Vars(r)
+	user_id := vars["user_id"]
 	role := r.FormValue("role")
 
-	if user_id == "" || role == "" {
+	if role == "" {
 		http.Error(w, "Please fill ID and set the role of user", http.StatusBadRequest)
 		return
 	}
 
 	userModel := models.User{}
-	if err := userModel.VerifyAndSetUserRole(server.DB, user_id, models.Role(role)); err != nil {
+	if err := userModel.SetUserRole(server.DB, user_id, models.Role(role)); err != nil {
 		http.Error(w, "Verify user fail!", http.StatusConflict)
 	}
 	w.WriteHeader(http.StatusOK)

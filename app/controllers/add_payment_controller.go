@@ -31,7 +31,7 @@ func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 		return decimal.NewFromString(s)
 	}
 
-	const layoutTime = "02-01-2006"
+	const layoutTime = "2006-01-02"
 	pay_date, err := time.Parse(layoutTime, p_date_detail)
 	if err != nil {
 		http.Error(w, "invalid payment date!", http.StatusBadRequest)

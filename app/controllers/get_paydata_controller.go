@@ -1,16 +1,18 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"time"
 
 	"encoding/json"
+	
 
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/gorilla/mux"
-	
 )
+
 func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pStatusID := vars["payment_status_id"]
@@ -55,7 +57,7 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 
 	var installment models.Installment
 	if len(installments) > 0 {
-		installment = installments[0]  // Assuming you need the first installment
+		installment = installments[0] // Assuming you need the first installment
 	} else {
 		http.Error(w, "No installments found!", http.StatusBadRequest)
 		return
@@ -63,19 +65,33 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 
 	// var installment models.Installment
 	total := installment.Ins_Amount.Sub(totalAdj.Decimal)
-	if total.IsNegative(){
+	if total.IsNegative() {
 		http.Error(w, "Calculate premium inception fail!", http.StatusBadRequest)
 		return
 	}
 
-	totalSum := total.IntPart()
+	// totalSum := total.IntPart()
 
-	balance, err := models.CalculatePayment(server.DB, pStatusID, int(totalSum))
+	balance, err := models.CalculatePayment(server.DB, pStatusID)
 	if err != nil {
-		http.Error(w, "Calculation balance fail!", http.StatusBadRequest)
+		http.Error(w, "Calculate balance fail!", http.StatusBadRequest)
 		return
 	}
+	// fmt.Println("ini balance sebelum: %d",balance)
+	// balance = models.Decimal{Decimal: total.Sub(balance.Decimal)}
+	// fmt.Println("ini balance sesudah: %d",balance)
 
+
+
+	var pay_allocation models.Decimal
+	var paymentDet []models.Payment_Details
+
+	for _, pd := range paymentDet{
+		pay_allocation = pd.Pay_Amount
+	
+		fmt.Println("ini balance : ", balance)
+	}
+	balance = models.Decimal{Decimal : pay_allocation.Sub(total)}
 
 	// Prepare response data
 	responseData := ResponseData{
@@ -86,11 +102,10 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 			PeriodStart:   invoice.Period_Start,
 			PeriodEnd:     invoice.Period_End,
 		},
-		Installments:   make([]InstallmentData, len(installments)),
+		Installments:    make([]InstallmentData, len(installments)),
 		Payment_Details: make([]PaymentDetailsData, len(paymentDetails)),
-		Total: models.Decimal{Decimal: total},
-		Balance: models.Decimal{Decimal: balance.Decimal},
-		
+		Total:           models.Decimal{Decimal: total},
+		Balance:         models.Decimal{Decimal: balance.Decimal},
 	}
 
 	// Fill data Adjustments
@@ -108,11 +123,13 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fill data PaymentDetails
+	
 	for i, pd := range paymentDetails {
 		responseData.Payment_Details[i] = PaymentDetailsData{
 			PayDate:   pd.Pay_Date,
 			PayAmount: pd.Pay_Amount,
 		}
+		
 	}
 
 	// Marshal data response to JSON
@@ -129,12 +146,9 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (server *Server) PaymentCalculation(w http.ResponseWriter, r *http.Request) {
 
-func (server *Server) PaymentCalculation(w http.ResponseWriter, r *http.Request)  {
-	
 }
-
-
 
 // Struct untuk response data yang lebih spesifik
 type ResponseData struct {
@@ -143,8 +157,8 @@ type ResponseData struct {
 	Invoice         InvoiceData          `json:"invoice"`
 	Installments    []InstallmentData    `json:"installments"`
 	Payment_Details []PaymentDetailsData `json:"payment_details"`
-	Total	models.Decimal	`json:"total"`
-	Balance models.Decimal	`json:"balance"`
+	Total           models.Decimal       `json:"total"`
+	Balance         models.Decimal       `json:"balance"`
 }
 
 type InvoiceData struct {

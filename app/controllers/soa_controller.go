@@ -19,7 +19,7 @@ func (server *Server) CreateSoaAction(w http.ResponseWriter, r *http.Request) {
 	periode_start_soa := r.FormValue("periode_start_soa")
 	periode_end_soa := r.FormValue("periode_end_soa")
 
-	const layoutTime = "02-01-2006"
+	const layoutTime = "2006-01-02"
 
 	if name_of_insured_soa == "" || periode_start_soa == "" || periode_end_soa == "" {
 		http.Error(w, "Please fill the required fields!", http.StatusSeeOther)
@@ -126,7 +126,7 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			paymentDate := r.FormValue("payment_date")
 			paymentAmount := r.FormValue("payment_amount")
 
-			const layoutTime = "02-01-2006"
+			const layoutTime = "2006-01-02"
 
 			if paymentDate == "" || paymentAmount == "" {
 				http.Error(w, "Please fill the required fields!", http.StatusBadRequest)

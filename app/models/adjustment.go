@@ -6,7 +6,7 @@ import (
 
 	"log"
 
-	"github.com/shopspring/decimal"
+	// "github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -63,7 +63,7 @@ func CalculateAdjustment(db *gorm.DB, pStatID string) (Decimal, error)  {
     return total, nil
 }
 
-func CalculatePayment(db *gorm.DB, pasStatID string, total int)(Decimal, error){
+func CalculatePayment(db *gorm.DB, pasStatID string)(Decimal, error){
     var payStat Payment_Status
     err := db.Debug().Preload("Invoice").Where("payment_status_id", pasStatID).First(&payStat).Error
     if err != nil {
@@ -93,9 +93,10 @@ func CalculatePayment(db *gorm.DB, pasStatID string, total int)(Decimal, error){
     if rowCount > 0{
         for _, pay := range payDet{
             balance = Decimal{balance.Add(pay.Pay_Amount.Decimal)}
+            fmt.Println(balance)
         }
     }
-    balance = Decimal{balance.Sub(decimal.NewFromInt(int64(total)))}
+    // balance = Decimal{balance.Sub(decimal.NewFromInt(int64(total)))}
     
     return balance, nil
 }

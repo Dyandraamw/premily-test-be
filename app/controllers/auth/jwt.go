@@ -17,9 +17,16 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(UserID string) (string, error) {
-	expiredToken := time.Now().Add(1 * time.Hour)
+func GenerateJWT(UserID string, rememberMe bool) (string, error) {
+	// expiredToken := time.Now().Add(1 * time.Hour)
 
+	var expiredToken time.Time
+    if rememberMe {
+        expiredToken = time.Now().Add(72 * time.Hour) // Token berlaku selama 3 hari jika rememberMe diatur
+    } else {
+        expiredToken = time.Now().Add(1 * time.Hour) // Token berlaku selama 1 jam jika rememberMe tidak diatur
+    }
+	
 	claimsToken := &Claims{
 		UserID: UserID,
 		RegisteredClaims: jwt.RegisteredClaims{
