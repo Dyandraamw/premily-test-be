@@ -65,7 +65,8 @@ func CalculateAdjustment(db *gorm.DB, pStatID string) (Decimal, error)  {
 
 func CalculatePayment(db *gorm.DB, pasStatID string)(Decimal, error){
     var payStat Payment_Status
-    err := db.Debug().Preload("Invoice").Where("payment_status_id", pasStatID).First(&payStat).Error
+    
+    err := db.Debug().Where("payment_status_id", pasStatID).First(&payStat).Error
     if err != nil {
         return Decimal{}, nil
     }
@@ -93,10 +94,9 @@ func CalculatePayment(db *gorm.DB, pasStatID string)(Decimal, error){
     if rowCount > 0{
         for _, pay := range payDet{
             balance = Decimal{balance.Add(pay.Pay_Amount.Decimal)}
-            fmt.Println(balance)
         }
     }
-    // balance = Decimal{balance.Sub(decimal.NewFromInt(int64(total)))}
+    
     
     return balance, nil
 }

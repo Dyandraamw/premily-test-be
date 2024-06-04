@@ -1,16 +1,15 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"time"
 
 	"encoding/json"
-	
 
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/gorilla/mux"
+	"github.com/shopspring/decimal"
 )
 
 func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
@@ -72,26 +71,40 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 
 	// totalSum := total.IntPart()
 
-	balance, err := models.CalculatePayment(server.DB, pStatusID)
+	_, err = models.CalculatePayment(server.DB, pStatusID)
 	if err != nil {
 		http.Error(w, "Calculate balance fail!", http.StatusBadRequest)
 		return
 	}
-	// fmt.Println("ini balance sebelum: %d",balance)
-	// balance = models.Decimal{Decimal: total.Sub(balance.Decimal)}
-	// fmt.Println("ini balance sesudah: %d",balance)
 
-
+	// balanceSum := models.Decimal{Decimal: total.Sub(balance.Decimal)}
 
 	var pay_allocation models.Decimal
-	var paymentDet []models.Payment_Details
+	// var paymentDet []models.Payment_Details
 
-	for _, pd := range paymentDet{
-		pay_allocation = pd.Pay_Amount
-	
-		fmt.Println("ini balance : ", balance)
+	for _, pd := range paymentDetails {
+		pay_allocation = models.Decimal{pay_allocation.Add(pd.Pay_Amount.Decimal)}
 	}
-	balance = models.Decimal{Decimal : pay_allocation.Sub(total)}
+	balanceSum := models.Decimal{Decimal: pay_allocation.Sub(total)}
+	
+
+	// Update payment status based on balanceSum
+    if balanceSum.Decimal.Cmp(decimal.NewFromInt(0)) >= 0 {
+		paymentStatus.Status = "PAID"
+       
+    } else if balanceSum.Decimal.Cmp(decimal.NewFromInt(0)) < 0{
+		paymentStatus.Status = "OUTSTANDING"
+        
+    }else{
+		return
+	}
+
+    // Save the updated payment status to the database
+    err = server.DB.Save(&paymentStatus).Error
+    if err != nil {
+        http.Error(w, "Error updating payment status!", http.StatusInternalServerError)
+        return
+    }
 
 	// Prepare response data
 	responseData := ResponseData{
@@ -105,7 +118,9 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 		Installments:    make([]InstallmentData, len(installments)),
 		Payment_Details: make([]PaymentDetailsData, len(paymentDetails)),
 		Total:           models.Decimal{Decimal: total},
-		Balance:         models.Decimal{Decimal: balance.Decimal},
+		Pay_Allocation:  pay_allocation,
+		Balance:         balanceSum,
+		Status: paymentStatus.Status,
 	}
 
 	// Fill data Adjustments
@@ -123,13 +138,13 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fill data PaymentDetails
-	
+
 	for i, pd := range paymentDetails {
 		responseData.Payment_Details[i] = PaymentDetailsData{
 			PayDate:   pd.Pay_Date,
 			PayAmount: pd.Pay_Amount,
 		}
-		
+
 	}
 
 	// Marshal data response to JSON
@@ -146,10 +161,6 @@ func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (server *Server) PaymentCalculation(w http.ResponseWriter, r *http.Request) {
-
-}
-
 // Struct untuk response data yang lebih spesifik
 type ResponseData struct {
 	PaymentStatus   string               `json:"payment_status_id"`
@@ -158,7 +169,9 @@ type ResponseData struct {
 	Installments    []InstallmentData    `json:"installments"`
 	Payment_Details []PaymentDetailsData `json:"payment_details"`
 	Total           models.Decimal       `json:"total"`
+	Pay_Allocation  models.Decimal       `json:"pay_Allocation"`
 	Balance         models.Decimal       `json:"balance"`
+	Status			string				`json:"status"`
 }
 
 type InvoiceData struct {

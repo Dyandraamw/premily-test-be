@@ -12,7 +12,6 @@ func (server *Server) initializeRoutes() {
 	server.Router.HandleFunc("/sign-in", server.SignInAction).Methods("POST")
 	server.Router.HandleFunc("/sign-up", server.SignUpAction).Methods("POST")
 
-
 	api := server.Router.PathPrefix("/api").Subrouter()
 	api.Use(middlewares.JwtMiddleware)
 	// server.Router.HandleFunc("/", server.Home).Methods("GET")
@@ -23,9 +22,9 @@ func (server *Server) initializeRoutes() {
 	api.HandleFunc("/sign-out", server.SignOutAction).Methods("POST")
 
 	api.HandleFunc("/unverified-users", server.GetUnverifiedUserAction).Methods("GET")
-	api.HandleFunc("/unverified-users", server.GetUnroleUserAction).Methods("GET")
-	api.HandleFunc("/verify-user/", server.VerifyUserAction).Methods("POST")
-	api.HandleFunc("/verify-user/{user_id}", server.SetUserRoleAction).Methods("POST")
+	api.HandleFunc("/unrole-users", server.GetUnroleUserAction).Methods("GET")
+	api.HandleFunc("/verify-user/{user_id}", server.VerifyUserAction).Methods("POST")
+	api.HandleFunc("/set-role/{user_id}", server.SetUserRoleAction).Methods("POST")
 	api.HandleFunc("/user/{user_id}", server.GetUserAction).Methods("GET")
 
 	api.HandleFunc("/invoice-list", server.Invoice).Methods("GET")
@@ -42,7 +41,5 @@ func (server *Server) initializeRoutes() {
 	api.HandleFunc("/add-payment", server.AddPayment).Methods("POST")
 	api.HandleFunc("/add-adjustment/{payment_status_id}", server.AddAjustment).Methods("POST")
 	api.HandleFunc("/payment-data/{payment_status_id}", server.GetPaymentData).Methods("GET")
-	
 
-	
 }

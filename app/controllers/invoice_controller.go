@@ -3,10 +3,10 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	_ "math/rand"
+
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
@@ -55,28 +55,37 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	var err error
 	const layoutTime = "2006-01-02"
 
-	file, company_p, err := r.FormFile("comp_pict")
+	file, compPict, err := r.FormFile("company_pict")
 	if err != nil {
-		http.Error(w, "Failed to get image", http.StatusBadRequest)
+		http.Error(w, "Failed to get image: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	// Buat file kosong di server untuk menulis gambar yang diterima
-	outFile, err := os.Create("/app/images/" + company_p.Filename)
-	if err != nil {
-		http.Error(w, "Failed to create file", http.StatusInternalServerError)
-		return
-	}
-	defer outFile.Close()
-
-	// Salin data gambar dari permintaan ke file baru di server
-	_, err = io.Copy(outFile, file)
-	if err != nil {
-		http.Error(w, "Failed to copy image", http.StatusInternalServerError)
-		return
+	// Create a directory to save the uploaded files
+	uploadDir := "./invoice-company-picture"
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		os.Mkdir(uploadDir, os.ModePerm)
 	}
 
+	// Create a new file in the uploads directory
+	filePath := filepath.Join(uploadDir, compPict.Filename)
+	dst, err := os.Create(filePath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer dst.Close()
+
+	// Copy the uploaded file to the new file
+	if _, err := file.Seek(0, 0); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if _, err := dst.ReadFrom(file); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	company_name := r.FormValue("comp_name")
 	company_address := r.FormValue("comp_address")
 	company_contact := r.FormValue("comp_contact")
@@ -118,7 +127,7 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if company_name == "" || company_address == "" ||company_contact == "" || typeInvoice == "" || recipient == "" || address == "" || desc_premium == "" || desc_discount == "" ||
+	if company_name == "" || company_address == "" || company_contact == "" || typeInvoice == "" || recipient == "" || address == "" || desc_premium == "" || desc_discount == "" ||
 		desc_admin_cost == "" || desc_risk_management == "" || desc_brokage == "" || desc_pph == "" || total_premium_due == "" || policy_number == "" ||
 		name_of_insured == "" || address_of_insured == "" || type_of_insurance == "" ||
 		periode_start == "" || periode_end == "" || terms_of_period == "" || remarks == "" || due_date == "" || ins_amount == "" ||
@@ -213,20 +222,20 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	invoices := &models.Invoice{
 		Invoice_ID:           invoice_ID_Generate,
 		UserID:               userID,
-		Company_Picture: "/app/images" + company_p.Filename,
-		Company_Name: company_name,
-		Company_Address: company_address,
-		Company_Contact: company_contact,
+		Company_Picture:      filePath,
+		Company_Name:         company_name,
+		Company_Address:      company_address,
+		Company_Contact:      company_contact,
 		Type:                 models.Type(typeInvoice),
 		Recipient:            recipient,
 		Address:              address,
-		Net_Premium:         descPremiumDecimal,
+		Net_Premium:          descPremiumDecimal,
 		Desc_Discount:        descDiscountDecimal,
 		Desc_Admin_Cost:      descAdminCostDecimal,
 		Desc_Risk_Management: descRiskManagementDecimal,
 		Desc_Brokage:         descBrokageDecimal,
 		Desc_PPH:             descPPHDecimal,
-		Total_Premium_Due: totalPremDue,
+		Total_Premium_Due:    totalPremDue,
 		Policy_Number:        policy_number,
 		Name_Of_Insured:      name_of_insured,
 		Address_Of_Insured:   address_of_insured,
@@ -241,8 +250,8 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 
 	_, err = invoices_M.CreateInvoices(server.DB, invoices)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		fmt.Println("Create invoices fail!")
+		http.Error(w, "Create invoices fail!"+err.Error(), http.StatusBadRequest)
+	
 		return
 	}
 
@@ -267,8 +276,8 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	}
 	_, err = installment_M.CreateInstallment(server.DB, installments)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		fmt.Println("Installment fail!")
+		http.Error(w, "Installment fail"+err.Error(), http.StatusBadRequest)
+		
 		return
 	}
 
@@ -296,8 +305,8 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	}
 	_, err = sumIns_M.CreateSumInsuredDetails(server.DB, sum_insureds)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		fmt.Println("Sum insured fail!")
+		http.Error(w, "Sum insured fail"+err.Error(), http.StatusBadRequest)
+		
 		return
 	}
 
@@ -440,7 +449,7 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 		Type:                 models.Type(typeInvoice),
 		Recipient:            recipient,
 		Address:              address,
-		Net_Premium:         descPremiumDecimal,
+		Net_Premium:          descPremiumDecimal,
 		Desc_Discount:        descDiscountDecimal,
 		Desc_Admin_Cost:      descAdminCostDecimal,
 		Desc_Risk_Management: descRiskManagementDecimal,
@@ -471,8 +480,8 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 
 	err = invoices_M.UpdateInvoices(server.DB, invoiceID, installments, sum_insured)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		http.Error(w, "update invoice fail", http.StatusBadRequest)
+		
+		http.Error(w, "update invoice fail"+err.Error(), http.StatusBadRequest)
 		return
 	}
 	fmt.Println(invoices)
@@ -489,8 +498,8 @@ func (server *Server) DeletedInvoicesAction(w http.ResponseWriter, r *http.Reque
 	invoices := &models.Invoice{}
 	err := invoices.DeletedInvoices(server.DB, invoice_ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		http.Error(w, "Delete Fail!", http.StatusBadRequest)
+		
+		http.Error(w, "Delete Fail!" + err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

@@ -3,9 +3,10 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
+
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"regexp"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
+
 	"gorm.io/gorm"
 )
 
@@ -67,7 +69,7 @@ func (server *Server) SignInAction(w http.ResponseWriter, r *http.Request) {
 
 	user, err := userModel.FindByEmail(server.DB, email, password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Email not found!"+err.Error(), http.StatusInternalServerError)
 		// http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -82,7 +84,7 @@ func (server *Server) SignInAction(w http.ResponseWriter, r *http.Request) {
 	var compare_password = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
 	if compare_password == nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		http.Error(w, "Invalid email or password"+err.Error(), http.StatusUnauthorized)
 		// http.Redirect(w, r, "/login", http.StatusSeeOther )
 		return
 	}
@@ -141,28 +143,38 @@ func (server *Server) SignUpAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, image, err := r.FormFile("image")
-	if err != nil {
-		http.Error(w, "Failed to get image", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
+	file, handler, err := r.FormFile("image")
+    if err != nil {
+        http.Error(w, "Failed to get image: "+err.Error(), http.StatusBadRequest)
+        return
+    }
+    defer file.Close()
 
-	// Buat file kosong di server untuk menulis gambar yang diterima
-	outFile, err := os.Create("/app/images/" + image.Filename)
-	if err != nil {
-		http.Error(w, "Failed to create file", http.StatusInternalServerError)
-		return
-	}
-	defer outFile.Close()
+    // Create a directory to save the uploaded files
+    uploadDir := "./uploads"
+    if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+        os.Mkdir(uploadDir, os.ModePerm)
+    }
 
-	// Salin data gambar dari permintaan ke file baru di server
-	_, err = io.Copy(outFile, file)
-	if err != nil {
-		http.Error(w, "Failed to copy image", http.StatusInternalServerError)
-		return
-	}
+    // Create a new file in the uploads directory
+    filePath := filepath.Join(uploadDir, handler.Filename)
+    dst, err := os.Create(filePath)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer dst.Close()
 
+    // Copy the uploaded file to the new file
+    if _, err := file.Seek(0, 0); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    if _, err := dst.ReadFrom(file); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+	 
 	if err := ValidatePassword(password); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -183,7 +195,7 @@ func (server *Server) SignUpAction(w http.ResponseWriter, r *http.Request) {
 	makePassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	params := &models.User{
 		UserID:      uuid.New().String(),
-		Image:       "/app/images" + image.Filename,
+		Image:       filePath,
 		Username:    username,
 		Name:        name,
 		Email:       email,
@@ -255,7 +267,7 @@ func (server *Server) SetUserRoleAction(w http.ResponseWriter, r *http.Request) 
 	role := r.FormValue("role")
 
 	if role == "" {
-		http.Error(w, "Please fill ID and set the role of user", http.StatusBadRequest)
+		http.Error(w, "Please fill the role of user", http.StatusBadRequest)
 		return
 	}
 
@@ -264,26 +276,9 @@ func (server *Server) SetUserRoleAction(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Verify user fail!", http.StatusConflict)
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User successfully verified"))
+	w.Write([]byte("User successfully set the role"))
 }
 
-// func ValidatePassword(password string) error {
-// 	if len(password) < 8 {
-// 		return fmt.Errorf("Password must be at least 8 characters!")
-// 	}
-
-// 	// Regular expression to check for at least one lowercase letter, one uppercase letter, one number, and one special character.
-// 	match, err := regexp.MatchString(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$`, password)
-// 	if err != nil {
-// 		return fmt.Errorf("Error while validating password: %v", err)
-// 	}
-
-// 	if !match {
-// 		return fmt.Errorf("Password must contain uppercase letter, lowercase letter, number, and special character")
-// 	}
-
-//		return nil
-//	}
 func ValidatePassword(password string) error {
 	if len(password) < 8 {
 		return fmt.Errorf("password must be at least 8 characters")
