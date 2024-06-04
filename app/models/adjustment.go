@@ -1,7 +1,7 @@
 package models
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"log"
@@ -36,41 +36,66 @@ func (adjustment *Adjustment) CreateAdjustment(db *gorm.DB, adjust *Adjustment) 
     return adjustM, nil
 }
 
-func GetTotalWithAdjustments(db *gorm.DB, selectedInvoiceID string, installmentID string, insAmount Decimal) (Decimal, error) {
-    var invoice Invoice
-    err := db.Preload("Installment").Where("invoice_id = ?", selectedInvoiceID).First(&invoice).Error
-    if err != nil {
-        log.Printf("Error loading invoice: %v", err)
-        return Decimal{decimal.Zero}, err
-    }
-
-    // Cari installment yang sesuai dengan installmentID
-    var targetInstallment Installment
-    for _, installment := range invoice.Installment {
-        if installment.Installment_ID == installmentID {
-            targetInstallment = installment
-            break
-        }
-    }
-
-    // Jika installment tidak ditemukan
-    if targetInstallment.Installment_ID == "" {
-        log.Printf("Installment with ID %s not found in selected invoice %s", installmentID, selectedInvoiceID)
-        return Decimal{decimal.Zero}, errors.New("Installment not found")
-    }
-
-    // Hitung total dengan penyesuaian
-    total := targetInstallment.Ins_Amount
+func CalculateAdjustment(db *gorm.DB, pStatID string) (Decimal, error)  {
     var adjustments []Adjustment
-    err = db.Where("installment_id = ?", installmentID).Find(&adjustments).Error
-    if err != nil {
-        log.Printf("Error loading adjustments: %v", err)
-        return Decimal{decimal.Zero}, err
+
+    // Get all adjustments for the given payment_status_id
+    if err := db.Debug().Where("payment_status_id = ?", pStatID).Find(&adjustments).Error; err != nil {
+        return Decimal{}, fmt.Errorf("error querying adjustments: %v", err)
     }
 
-    for _, adj := range adjustments {
-        total = Decimal{total.Add(adj.Adjustment_Amount.Decimal)}
+    // Debug: log jumlah adjustments yang diambil
+    log.Printf("Number of adjustments found: %d\n", len(adjustments))
+
+    // Calculate the total and row count
+    rowCount := len(adjustments)
+    var total Decimal
+
+    if rowCount > 0 {
+        for _, adj := range adjustments {
+            log.Printf("Adding adjustment amount: %v\n", adj.Adjustment_Amount)
+            total = Decimal{total.Add(adj.Adjustment_Amount.Decimal)}
+        }
+    } else {
+        log.Printf("No adjustments found for payment_status_id: %s\n", pStatID)
     }
 
     return total, nil
+}
+
+func CalculatePayment(db *gorm.DB, pasStatID string, total int)(Decimal, error){
+    var payStat Payment_Status
+    err := db.Debug().Preload("Invoice").Where("payment_status_id", pasStatID).First(&payStat).Error
+    if err != nil {
+        return Decimal{}, nil
+    }
+    invoiceID := payStat.Invoice_ID
+
+    var installments []Installment
+    err = db.Debug().Where("invoice_id", invoiceID).Find(&installments).Error
+    if err != nil {
+        return Decimal{}, nil
+    }
+
+    var payDet []Payment_Details
+
+    for _, installment := range installments{
+        var insPayDet []Payment_Details
+        err := db.Debug().Where("installment_id", installment.Installment_ID).Find(&insPayDet).Error
+        if err != nil {
+            return Decimal{}, nil
+        }
+        payDet = append(payDet, insPayDet...)
+    }
+
+    rowCount := len(payDet)
+    var balance Decimal
+    if rowCount > 0{
+        for _, pay := range payDet{
+            balance = Decimal{balance.Add(pay.Pay_Amount.Decimal)}
+        }
+    }
+    balance = Decimal{balance.Sub(decimal.NewFromInt(int64(total)))}
+    
+    return balance, nil
 }

@@ -20,7 +20,7 @@ func (server *Server) AddAjustment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if adjustment_title == "" || len(adjustment_amount) == 0 {
 		// http.Error(w, err.Error(), http.StatusSeeOther)
-		fmt.Println("ini panjang adjsutment : ",len(adjustment_amount))
+		fmt.Println("ini panjang adjsutment : ", len(adjustment_amount))
 		http.Error(w, "Please fill the required fields!", http.StatusSeeOther)
 		return
 	}
@@ -121,67 +121,3 @@ func (server *Server) AddAjustment(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-
-func (server *Server) GetPaymentData(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pStatusID := vars["payment_status_id"]
-
-	var paymentStatus models.Payment_Status
-	err := server.DB.Preload("Adjustment").Where("payment_status_id = ?", pStatusID).First(&paymentStatus).Error
-	if err != nil {
-		http.Error(w, "Error fetching payment status!", http.StatusInternalServerError)
-		return
-	}
-
-	var invoice models.Invoice
-	err = server.DB.Where("invoice_id = ?", paymentStatus.Invoice_ID).First(&invoice).Error
-	if err != nil {
-		http.Error(w, "Error fetching invoice!", http.StatusInternalServerError)
-		return
-	}
-
-	var installments []models.Installment
-	err = server.DB.Where("invoice_id = ?", invoice.Invoice_ID).Find(&installments).Error
-	if err != nil {
-		http.Error(w, "Error fetching installments!", http.StatusInternalServerError)
-		return
-	}
-
-	var paymentDetails []models.Payment_Details
-	for _, installment := range installments {
-		var pd []models.Payment_Details
-		err = server.DB.Where("installment_id = ?", installment.Installment_ID).Find(&pd).Error
-		if err != nil {
-			http.Error(w, "Error fetching payment details!", http.StatusInternalServerError)
-			return
-		}
-		paymentDetails = append(paymentDetails, pd...)
-	}
-
-	// Prepare response data
-	responseData := struct {
-		PaymentStatus  models.Payment_Status  `json:"payment_status"`
-		Adjustments    []models.Adjustment    `json:"adjustments"`
-		Invoice        models.Invoice         `json:"invoice"`
-		Installments   []models.Installment   `json:"installments"`
-		PaymentDetails []models.Payment_Details `json:"payment_details"`
-	}{
-		PaymentStatus:  paymentStatus,
-		Adjustments:    paymentStatus.Adjustment,
-		Invoice:        invoice,
-		Installments:   installments,
-		PaymentDetails: paymentDetails,
-	}
-
-	// Marshal data response to JSON
-	response, err := json.Marshal(responseData)
-	if err != nil {
-		http.Error(w, "Error marshaling JSON response", http.StatusInternalServerError)
-		return
-	}
-
-	// Set header and send response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
-}

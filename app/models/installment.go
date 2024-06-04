@@ -44,14 +44,13 @@ func (in *Installment) GetInstallmentByInvoiceID(db *gorm.DB, invoiceID string) 
 
 func calculateTotalInstallment(db *gorm.DB, invoiceID string) Decimal {
     var totalInstallment Decimal
-    // Lakukan query ke database untuk mengambil total installment berdasarkan invoice_id
-    // Misalnya, menggunakan GORM:
+ 
     var sumInstallment struct {
         TotalInstallment Decimal
     }
     if err := db.Raw("SELECT SUM(ins_amount) AS total_installment FROM installments WHERE invoice_id = ?", invoiceID).Scan(&sumInstallment).Error; err != nil {
         log.Fatalf("Failed to calculate total installment: %v", err)
-        // Atau sesuaikan dengan mekanisme error handling yang Anda gunakan
+        
 		return Decimal{}
     }
     totalInstallment = sumInstallment.TotalInstallment

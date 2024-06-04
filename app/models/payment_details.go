@@ -31,3 +31,4 @@ func (pDtl *Payment_Details) CreatePaymentDetails(db *gorm.DB, pDetails *Payment
 	}
 	return payment_detailsM, nil
 }
+
