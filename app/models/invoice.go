@@ -246,6 +246,7 @@ func (i *Invoice) CreateInvoices(db *gorm.DB, invoices *Invoice) (*Invoice, erro
 		Desc_Risk_Management: invoices.Desc_Risk_Management,
 		Desc_Brokage:         invoices.Desc_Brokage,
 		Desc_PPH:             invoices.Desc_PPH,
+		Total_Premium_Due:    invoices.Total_Premium_Due,
 		Policy_Number:        invoices.Policy_Number,
 		Name_Of_Insured:      invoices.Name_Of_Insured,
 		Address_Of_Insured:   invoices.Address_Of_Insured,
