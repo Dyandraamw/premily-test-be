@@ -32,8 +32,8 @@ type Role string
 type Verify string
 
 const (
-	ActiveVerify	Verify = "active"
-	PendingVerify	Verify = "pending"
+	ActiveVerify  Verify = "active"
+	PendingVerify Verify = "pending"
 )
 
 const (
@@ -104,7 +104,6 @@ func (u *User) CreateUser(db *gorm.DB, params *User) (*User, error) {
 	return user, nil
 }
 
-
 func (u *User) GetUnverifiedUser(db *gorm.DB) ([]*User, error) {
 	var users []*User
 	err := db.Debug().Model(&User{}).Where("verified = ?", PendingVerify).Find(&users).Error
@@ -114,21 +113,19 @@ func (u *User) GetUnverifiedUser(db *gorm.DB) ([]*User, error) {
 	return users, nil
 }
 func (u *User) GetUnroleUser(db *gorm.DB) ([]*User, error) {
-    var users []*User
-    err := db.Debug().Model(&User{}).Where("role = ?", PendingRole).Find(&users).Error
-    if err != nil {
-        return nil, fmt.Errorf("failed to get unrole users: %v", err)
-    }
-    return users, nil
+	var users []*User
+	err := db.Debug().Model(&User{}).Where("role = ?", PendingRole).Find(&users).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unrole users: %v", err)
+	}
+	return users, nil
 }
-
 
 func (u *User) VerifyUser(db *gorm.DB, user_id string, verify Verify) error {
 	var user User
 	if err := db.Debug().Model(User{}).Where("user_id=?", user_id).First(&user).Error; err != nil {
 		return err
 	}
-	
 
 	user.Verified = verify // Menggunakan nilai verify yang diterima sebagai parameter
 

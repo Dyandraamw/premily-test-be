@@ -9,7 +9,6 @@ import (
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
 	_ "github.com/gorilla/mux"
-	
 )
 
 func (server *Server) CreatePaymentStatus(w http.ResponseWriter, r *http.Request) {
@@ -145,4 +144,3 @@ func (server *Server) CreatePaymentStatus(w http.ResponseWriter, r *http.Request
 	w.Write(response)
 
 }
-

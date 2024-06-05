@@ -53,6 +53,14 @@ const (
 	DebitType  = "debit"
 )
 
+type ResponseInvoice struct {
+	InvoiceID       string    `json:"Invoice_ID"`
+	Recipient       string    `json:"Recipient"`
+	CreatedAt       time.Time `json:"Created_At"`
+	Period          string    `json:"Period"`
+	TotalPremiumDue Decimal   `json:"Total_Premium_Due"`
+}
+
 // func calculateTotalDesc(invoice Invoice) decimal.Decimal {
 //     descPremium, _ := decimal.NewFromString(invoice.Net_Premium.String())
 //     descDiscount, _ := decimal.NewFromString(invoice.Desc_Discount.String())
@@ -68,6 +76,31 @@ const (
 //              Add(descPPH)
 //     return total
 // }
+
+func (i *Invoice) GetInvoiceResponseList(db *gorm.DB) ([]ResponseInvoice, error) {
+	var err error
+	var invoices []Invoice
+
+	err = db.Debug().Find(&invoices).Error
+	if err != nil {
+		return nil, err
+	}
+
+	responseInvoices := make([]ResponseInvoice, len(invoices))
+	for idx, invoice := range invoices {
+		period := invoice.Period_Start.Format("2006-01-02") + " - " + invoice.Period_End.Format("2006-01-02")
+		responseInvoice := ResponseInvoice{
+			InvoiceID:       invoice.Invoice_ID,
+			Recipient:       invoice.Recipient,
+			CreatedAt:       invoice.Created_At,
+			Period:          period,
+			TotalPremiumDue: Decimal{invoice.Total_Premium_Due.Decimal},
+		}
+		responseInvoices[idx] = responseInvoice
+	}
+
+	return responseInvoices, nil
+}
 
 func (i *Invoice) GetInvoice(db *gorm.DB) (*[]Invoice, error) {
 	var err error
