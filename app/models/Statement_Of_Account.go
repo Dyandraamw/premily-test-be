@@ -50,3 +50,5 @@ func (s *Statement_Of_Account) DeleteSOA(db *gorm.DB, soa_id string) error {
 	}
 	return nil
 }
+
+

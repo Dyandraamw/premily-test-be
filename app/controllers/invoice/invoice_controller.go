@@ -1,13 +1,14 @@
-package controllers
+package invoice
 
 import (
 	"encoding/json"
-	
+
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/frangklynndruru/premily_backend/app/controllers"
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/gorilla/mux"
@@ -16,7 +17,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func (server *Server) Invoice(w http.ResponseWriter, r *http.Request) {
+func Invoice(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
 	invoiceModel := models.Invoice{}
 
 	invoices, err := invoiceModel.GetInvoiceResponseList(server.DB)
@@ -33,7 +34,7 @@ func (server *Server) Invoice(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (server *Server) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
+func GetInvoiceByID(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	invoice_ID := vars["invoices_id"]
 
@@ -49,7 +50,7 @@ func (server *Server) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(invoices)
 }
 
-func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Request) {
+func CreateInvoicesAction(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	const layoutTime = "2006-01-02"
@@ -250,12 +251,12 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	_, err = invoices_M.CreateInvoices(server.DB, invoices)
 	if err != nil {
 		http.Error(w, "Create invoices fail!"+err.Error(), http.StatusBadRequest)
-	
+
 		return
 	}
 
 	installment_M := models.Installment{}
-	var idGeneratorInstallment = NewIDGenerator("INS")
+	var idGeneratorInstallment = server.NewIDGenerator("INS")
 
 	installments := &models.Installment{}
 	for {
@@ -276,12 +277,12 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	_, err = installment_M.CreateInstallment(server.DB, installments)
 	if err != nil {
 		http.Error(w, "Installment fail"+err.Error(), http.StatusBadRequest)
-		
+
 		return
 	}
 
 	sumIns_M := models.Sum_Insured_Details{}
-	var idGeneratorSumIns = NewIDGenerator("S-INS")
+	var idGeneratorSumIns = server.NewIDGenerator("S-INS")
 
 	sum_insureds := &models.Sum_Insured_Details{}
 	for {
@@ -305,7 +306,7 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 	_, err = sumIns_M.CreateSumInsuredDetails(server.DB, sum_insureds)
 	if err != nil {
 		http.Error(w, "Sum insured fail"+err.Error(), http.StatusBadRequest)
-		
+
 		return
 	}
 
@@ -323,16 +324,15 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 
 }
 
-
-func (server *Server) DeletedInvoicesAction(w http.ResponseWriter, r *http.Request) {
+func DeletedInvoicesAction(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	invoice_ID := vars["invoice_id"]
 
 	invoices := &models.Invoice{}
 	err := invoices.DeletedInvoices(server.DB, invoice_ID)
 	if err != nil {
-		
-		http.Error(w, "Delete Fail!" + err.Error(), http.StatusBadRequest)
+
+		http.Error(w, "Delete Fail!"+err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
