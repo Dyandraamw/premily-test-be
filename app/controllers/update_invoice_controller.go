@@ -1,4 +1,4 @@
-package invoice
+package controllers
 
 import (
 	"encoding/json"
@@ -7,13 +7,13 @@ import (
 
 	
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
-	"github.com/frangklynndruru/premily_backend/app/controllers"
+	
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/gorilla/mux"
 	"github.com/shopspring/decimal"
 )
 
-func UpdateInvoices(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
+func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	invoiceID := vars["invoice_id"]
 

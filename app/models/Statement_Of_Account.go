@@ -1,7 +1,7 @@
 package models
 
 import (
-	"fmt"
+	
 	"time"
 
 	"gorm.io/gorm"
@@ -18,6 +18,12 @@ type Statement_Of_Account struct {
 
 	Created_At time.Time
 	Updated_At time.Time
+}
+
+type ResponseSoa struct {
+	SOA_ID          string `json:"SOA_ID"`
+	Name_Of_Insured string `json:"Name_Of_Insured"`
+	Period          string `json:"Period"`
 }
 
 func (s *Statement_Of_Account) CreateNewSOA(db *gorm.DB, soa *Statement_Of_Account) (*Statement_Of_Account, error) {
@@ -39,16 +45,33 @@ func (s *Statement_Of_Account) CreateNewSOA(db *gorm.DB, soa *Statement_Of_Accou
 	return soaModels, nil
 }
 
+func (soa *Statement_Of_Account) GetSoaList(db *gorm.DB) ([]ResponseSoa, error) {
+	var soaSlice []Statement_Of_Account
+
+	err := db.Debug().Find(&soaSlice).Error
+	if err != nil {
+		return nil, err
+	}
+	responseSoas := make([]ResponseSoa, len(soaSlice))
+	for idx, soaIndex := range soaSlice {
+		period := soaIndex.Period_Start.Format("2006-01-02") + " - " + soaIndex.Period_End.Format("2006-01-02")
+		responseSoa := ResponseSoa{
+			SOA_ID:          soaIndex.SOA_ID,
+			Name_Of_Insured: soaIndex.Name_Of_Insured,
+			Period:          period,
+		}
+		responseSoas[idx] = responseSoa
+	}
+	return responseSoas, nil
+}
+
 func (s *Statement_Of_Account) DeleteSOA(db *gorm.DB, soa_id string) error {
 	soa := &Statement_Of_Account{}
-	if err := db.Debug().First(&soa, "soa_id = ? ", soa_id).Error; err != nil {
+	if err := db.Debug().First(&soa, "SOA_ID = ? ", soa_id).Error; err != nil {
 		return err
 	}
 	if err := db.Delete(&soa).Error; err != nil {
-		fmt.Printf("Fail!")
 		return err
 	}
 	return nil
 }
-
-

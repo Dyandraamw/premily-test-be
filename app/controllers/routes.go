@@ -1,9 +1,6 @@
 package controllers
 
 import (
-	"net/http"
-
-	"github.com/frangklynndruru/premily_backend/app/controllers/invoice"
 	"github.com/frangklynndruru/premily_backend/app/controllers/middlewares"
 	"github.com/gorilla/mux"
 )
@@ -29,30 +26,18 @@ func (server *Server) initializeRoutes() {
 	api.HandleFunc("/set-role/{user_id}", server.SetUserRoleAction).Methods("POST")
 	api.HandleFunc("/user/{user_id}", server.GetUserAction).Methods("GET")
 
-	// api.HandleFunc("/invoice-list", server.Invoice).Methods("GET")
-	api.HandleFunc("/invoice-list", func(w http.ResponseWriter, r *http.Request) {
-		invoice.Invoice(server, w, r)
-	}).Methods("GET")
+	api.HandleFunc("/invoice-list", server.Invoice).Methods("GET")
+	api.HandleFunc("/invoice/{invoice_id}", server.GetInvoiceByID).Methods("GET")
+	api.HandleFunc("/create-invoices", server.CreateInvoicesAction).Methods("POST")
+	api.HandleFunc("/update-invoices/{invoice_id}", server.UpdateInvoices).Methods("PUT")
+	api.HandleFunc("/delete-invoices/{invoice_id}", server.DeletedInvoicesAction).Methods("DELETE")
+	
+	
 
-	api.HandleFunc("/invoice/{invoice_id}", func(w http.ResponseWriter, r *http.Request) {
-		invoice.GetInvoiceByID(server, w, r)
-	}).Methods("GET")
-
-	api.HandleFunc("/create-invoices", func(w http.ResponseWriter, r *http.Request) {
-		invoice.CreateInvoicesAction(server, w, r)
-	}).Methods("POST")
-
-	api.HandleFunc("/update-invoices/{invoice_id}", func(w http.ResponseWriter, r *http.Request) {
-		invoice.UpdateInvoices(server, w, r)
-	}).Methods("POST")
-
-	api.HandleFunc("/delete-invoices/{invoice_id}", func(w http.ResponseWriter, r *http.Request) {
-		invoice.DeletedInvoicesAction(server, w, r)
-	}).Methods("DELETE")
-
+	api.HandleFunc("/retrive-soa", server.GetSoaResponseList).Methods("GET")
 	api.HandleFunc("/create-soa", server.CreateSoaAction).Methods("POST")
 	api.HandleFunc("/add-items/{soa_id}", server.AddItemSoaAction).Methods("POST")
-	api.HandleFunc("/delete-soa/{soa-id}", server.DeleteSoaAction).Methods("DELETE")
+	api.HandleFunc("/delete-soa/{soa_id}", server.DeleteSoaAction).Methods("DELETE")
 
 	api.HandleFunc("/create-new-payment-status", server.CreatePaymentStatus).Methods("POST")
 	api.HandleFunc("/add-payment", server.AddPayment).Methods("POST")

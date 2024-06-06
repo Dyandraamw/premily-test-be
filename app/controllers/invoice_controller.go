@@ -1,5 +1,4 @@
-package invoice
-
+package controllers
 import (
 	"encoding/json"
 
@@ -8,16 +7,17 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/frangklynndruru/premily_backend/app/controllers"
+	
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
+	
 	"github.com/gorilla/mux"
 
 	// "github.com/jung-kurt/gofpdf"
 	"github.com/shopspring/decimal"
 )
 
-func Invoice(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
+func (server *Server) Invoice(w http.ResponseWriter, r *http.Request) {
 	invoiceModel := models.Invoice{}
 
 	invoices, err := invoiceModel.GetInvoiceResponseList(server.DB)
@@ -34,7 +34,7 @@ func Invoice(server *controllers.Server, w http.ResponseWriter, r *http.Request)
 
 }
 
-func GetInvoiceByID(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
+func (server *Server) GetInvoiceByID( w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	invoice_ID := vars["invoices_id"]
 
@@ -50,7 +50,7 @@ func GetInvoiceByID(server *controllers.Server, w http.ResponseWriter, r *http.R
 	json.NewEncoder(w).Encode(invoices)
 }
 
-func CreateInvoicesAction(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
+func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	const layoutTime = "2006-01-02"
@@ -256,7 +256,7 @@ func CreateInvoicesAction(server *controllers.Server, w http.ResponseWriter, r *
 	}
 
 	installment_M := models.Installment{}
-	var idGeneratorInstallment = server.NewIDGenerator("INS")
+	var idGeneratorInstallment = NewIDGenerator("INS")
 
 	installments := &models.Installment{}
 	for {
@@ -282,7 +282,7 @@ func CreateInvoicesAction(server *controllers.Server, w http.ResponseWriter, r *
 	}
 
 	sumIns_M := models.Sum_Insured_Details{}
-	var idGeneratorSumIns = server.NewIDGenerator("S-INS")
+	var idGeneratorSumIns = NewIDGenerator("S-INS")
 
 	sum_insureds := &models.Sum_Insured_Details{}
 	for {
@@ -324,7 +324,7 @@ func CreateInvoicesAction(server *controllers.Server, w http.ResponseWriter, r *
 
 }
 
-func DeletedInvoicesAction(server *controllers.Server, w http.ResponseWriter, r *http.Request) {
+func (server *Server) DeletedInvoicesAction(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	invoice_ID := vars["invoice_id"]
 

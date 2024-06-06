@@ -139,7 +139,7 @@ func (i *Invoice) GetInvoiceByIDmodel(db *gorm.DB, invoice_ID string) (*Invoice,
 
 func (i *Invoice) DeletedInvoices(db *gorm.DB, invoice_ID string) error {
 	invoice := &Invoice{}
-	if err := db.Debug().First(&invoice, "invoice_id = ?", invoice_ID).Error; err != nil {
+	if err := db.Debug().First(&invoice, "Invoice_ID = ?", invoice_ID).Error; err != nil {
 		return err
 	}
 	if err := db.Delete(&invoice).Error; err != nil {
@@ -152,7 +152,7 @@ func (i *Invoice) DeletedInvoices(db *gorm.DB, invoice_ID string) error {
 func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []Installment, sum_insured []Sum_Insured_Details) error {
 	var invoice Invoice
 	if err := db.First(&invoice, "invoice_id = ?", invoice_ID).Error; err != nil {
-		fmt.Println("invoice tidak ditemukan - model")
+		fmt.Println("invoice not found - model")
 		return nil
 	}
 	invoice.Type = i.Type
