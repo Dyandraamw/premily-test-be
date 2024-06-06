@@ -1,37 +1,40 @@
 package controllers
 
 import (
-	"fmt"
+	// "fmt"
+	"encoding/json"
+	"log"
 	"net/http"
 	"time"
-	"encoding/json"
 
 	"github.com/frangklynndruru/premily_backend/app/models"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/shopspring/decimal"
 )
-
 func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	SoA_ID := vars["soa_id"]
 
-	invoiceModel := models.Invoice{}
-	invoices, err := invoiceModel.GetInvoice(server.DB)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		http.Error(w, "Get invoice fail", http.StatusBadRequest)
+	if SoA_ID == "" {
+		http.Error(w, "SOA_ID is required", http.StatusBadRequest)
 		return
 	}
 
-	// var idGeneratorSoaDetails = NewIDGenerator("SOA-Item")
+	invoiceModel := models.Invoice{}
+	invoices, err := invoiceModel.GetInvoice(server.DB)
+	if err != nil {
+		http.Error(w, "Get invoice fail: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var responseSoaDetails []*models.Statement_Of_Account_Details
 
 	for _, invoice := range *invoices {
 		installmentModel := models.Installment{}
 		installments_M, err := installmentModel.GetInstallmentByInvoiceID(server.DB, invoice.Invoice_ID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			http.Error(w, "Get installments fail", http.StatusBadRequest)
+			http.Error(w, "Get installments fail: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -41,20 +44,19 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Cari invoice yang dipilih
 		var selectedInvoice *models.Invoice
 		for _, invoiceList := range *invoices {
 			if invoiceList.Invoice_ID == selectedInvoiceID {
-				selectedInvoice = &invoice
+				selectedInvoice = &invoiceList
 				break
 			}
 		}
 
-		// Jika invoice yang dipilih tidak ditemukan
 		if selectedInvoice == nil {
 			http.Error(w, "Selected invoice not found!", http.StatusBadRequest)
 			return
 		}
+
 		for x, installment := range *installments_M {
 			instalmentStanding := x + 1
 
@@ -87,6 +89,7 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Invalid payment amount format", http.StatusBadRequest)
 				return
 			}
+
 			insAmountDecimal, err := decimal.NewFromString(installment.Ins_Amount.String())
 			if err != nil {
 				http.Error(w, "Invalid insured amount format", http.StatusBadRequest)
@@ -106,12 +109,6 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 			currentDate := time.Now()
 			AgingDay := int(p_date_soa_details.Sub(currentDate).Hours() / 24)
 
-			if AgingDay < 0 {
-				fmt.Printf("It's been more than %d days", -AgingDay)
-			} else {
-				fmt.Printf("Aging: %d days", AgingDay)
-			}
-
 			soaDetails := &models.Statement_Of_Account_Details{
 				SOA_Details_ID:       uuid.New().String(),
 				SOA_ID:               SoA_ID,
@@ -125,30 +122,26 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 				Payment_Allocation:   p_amount_soa_details,
 				Status:               status_SOA_Items,
 				Aging:                uint(AgingDay),
-				Created_At:           time.Now(),
-				Updated_At:           time.Now(),
+				Created_At:           currentDate,
+				Updated_At:           currentDate,
 			}
 
-			_, err = soaDetails.CreateSoaDetails(server.DB, soaDetails)
-			if err != nil {
-				http.Error(w, "Create items fail!", http.StatusBadRequest)
+			log.Printf("Creating SOA Details: %+v\n", soaDetails)
+
+			if _, err := soaDetails.CreateSoaDetails(server.DB, soaDetails); err != nil {
+				http.Error(w, "Create items fail: "+err.Error(), http.StatusBadRequest)
 				return
 			}
 
+			// Tambahkan soaDetails ke response list
+			responseSoaDetails = append(responseSoaDetails, soaDetails)
 		}
-
-	}
-	var result models.Invoice
-	err = server.DB.Preload("Installment").Preload("Sum_Insured_Details").Where("invoice_id = ?", (*invoices)[0].Invoice_ID).First(&result).Error
-	if err != nil {
-		http.Error(w, "Failed to retrieve updated invoice", http.StatusInternalServerError)
-		return
 	}
 
-	// Marshal the result into JSON
-	data, err := json.Marshal(result)
+	// Marshal the responseSoaDetails into JSON
+	data, err := json.Marshal(responseSoaDetails)
 	if err != nil {
-		http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
+		http.Error(w, "Failed to marshal JSON response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -156,29 +149,103 @@ func (server *Server) AddItemSoaAction(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
-	// w.WriteHeader(http.StatusOK)
-	// w.Write([]byte("SOA details added successfully"))
-
 }
 
-func (server *Server) UpdateItemSoaAction(w http.ResponseWriter, r *http.Request){
+
+func (server *Server) UpdateItemSoaAction(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	SoaDet_ID := vars["soa_details_id"]
 
+	// Fetch existing SOA details
+	var existingSOADetails models.Statement_Of_Account_Details
+	if err := server.DB.First(&existingSOADetails, "soa_details_id = ?", SoaDet_ID).Error; err != nil {
+		http.Error(w, "SOA Details not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// Parse input values
 	recipient := r.FormValue("recipient")
-	ins_standing := r.FormValue("ins_standing")
 	due_date := r.FormValue("due_date")
 	soa_amount := r.FormValue("soa_amount")
 	payment_date := r.FormValue("payment_date")
 	payment_amount := r.FormValue("payment_amount")
 
-
-	if recipient == "" || ins_standing == "" || due_date == "" || soa_amount == "" ||
-		payment_date == "" || payment_amount == ""
-	{
-		http.Error(w, "Fill the field !", + err.Error(), http.StatusBadRequest)
+	// Validate non-empty fields
+	if recipient == "" || due_date == "" || soa_amount == "" || payment_date == "" || payment_amount == "" {
+		http.Error(w, "Fill the fields!", http.StatusBadRequest)
 		return
 	}
 
+	const layoutTime = "2006-01-02"
 
+	// Parse and validate due_date
+	dueDate, err := time.Parse(layoutTime, due_date)
+	if err != nil {
+		http.Error(w, "Invalid due date format", http.StatusBadRequest)
+		return
+	}
+
+	// Convert and validate soa_amount
+	soaAmount, err := convertToDecimal(soa_amount)
+	if err != nil {
+		http.Error(w, "Invalid SOA amount format", http.StatusBadRequest)
+		return
+	}
+
+	// Parse and validate payment_date
+	paymentDate, err := time.Parse(layoutTime, payment_date)
+	if err != nil {
+		http.Error(w, "Invalid payment date format", http.StatusBadRequest)
+		return
+	}
+
+	// Convert and validate payment_amount
+	paymentAmount, err := convertToDecimal(payment_amount)
+	if err != nil {
+		http.Error(w, "Invalid payment amount format", http.StatusBadRequest)
+		return
+	}
+
+	// Update the existing SOA details
+	existingSOADetails.Recipient = recipient
+	existingSOADetails.Due_Date = dueDate
+	existingSOADetails.SOA_Amount = soaAmount
+	existingSOADetails.Payment_Date = paymentDate
+	existingSOADetails.Payment_Amount = paymentAmount
+	existingSOADetails.Updated_At = time.Now()
+
+	// Save the updated SOA details to the database
+	if err := existingSOADetails.UpdatesItemsSoa(server.DB, SoaDet_ID); err != nil {
+		http.Error(w, "Failed to update SOA Details: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch the updated SOA details to include in the response
+	if err := server.DB.First(&existingSOADetails, "soa_details_id = ?", SoaDet_ID).Error; err != nil {
+		http.Error(w, "Failed to fetch updated SOA Details: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Marshal the updated SOA details into JSON
+	data, err := json.Marshal(existingSOADetails)
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Set response headers and write JSON data
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+
+
+// Helper function to convert string to Decimal
+func convertToDecimal(s string) (models.Decimal, error) {
+	d, err := decimal.NewFromString(s)
+	if err != nil {
+		return models.Decimal{}, err
+	}
+	return models.Decimal{Decimal: d}, nil
 }

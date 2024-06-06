@@ -59,7 +59,6 @@ func CalculateAdjustment(db *gorm.DB, pStatID string) (Decimal, error)  {
     } else {
         log.Printf("No adjustments found for payment_status_id: %s\n", pStatID)
     }
-
     return total, nil
 }
 
@@ -96,7 +95,5 @@ func CalculatePayment(db *gorm.DB, pasStatID string)(Decimal, error){
             balance = Decimal{balance.Add(pay.Pay_Amount.Decimal)}
         }
     }
-    
-    
     return balance, nil
 }

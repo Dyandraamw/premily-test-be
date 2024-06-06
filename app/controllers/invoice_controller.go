@@ -42,8 +42,8 @@ func (server *Server) GetInvoiceByID( w http.ResponseWriter, r *http.Request) {
 
 	invoices, err := invoiceModel.GetInvoiceByIDmodel(server.DB, invoice_ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		http.Error(w, "Invoice not found!", http.StatusBadRequest)
+		
+		http.Error(w, "Invoice not found!"+err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

@@ -104,6 +104,22 @@ func (u *User) CreateUser(db *gorm.DB, params *User) (*User, error) {
 	return user, nil
 }
 
+func (u *User) UpdateUserPicture(db *gorm.DB, user_id string)  error{
+	var user User
+	err := db.Debug().First(&user, "user_id = ?", user_id).Error
+	if err != nil{
+		return fmt.Errorf("Picture not found : %w", err)
+	}
+	user.Image = u.Image
+	user.Updated_At = u.Updated_At
+
+	if err := db.Save(&user).Error; err != nil {
+		return fmt.Errorf("failed to save updated your picture: %w", err)
+	}
+
+	return nil
+}
+
 func (u *User) GetUnverifiedUser(db *gorm.DB) ([]*User, error) {
 	var users []*User
 	err := db.Debug().Model(&User{}).Where("verified = ?", PendingVerify).Find(&users).Error
