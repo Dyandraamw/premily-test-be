@@ -152,6 +152,7 @@ func (server *Server) UpdateInvoices(w http.ResponseWriter, r *http.Request) {
 		Period_End:           p_End,
 		Terms_Of_Period:      terms_of_period,
 		Remarks:              remarks,
+		Updated_At: time.Now(),
 	}
 	installments := []models.Installment{}
 	sum_insured := []models.Sum_Insured_Details{}

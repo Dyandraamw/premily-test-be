@@ -172,7 +172,6 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []
 	invoice.Period_End = i.Period_End
 	invoice.Terms_Of_Period = i.Terms_Of_Period
 	invoice.Remarks = i.Remarks
-	invoice.Created_At = i.Created_At
 	invoice.Updated_At = i.Updated_At
 
 	err := db.Save(&invoice).Error

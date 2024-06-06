@@ -49,22 +49,31 @@ func (soa_d *Statement_Of_Account_Details) CreateSoaDetails(db *gorm.DB, soa_det
 	return soa_Details_Model, nil
 }
 
-func (soa_d *Statement_Of_Account_Details) UpdatesItemsSoa(db *gorm.DB, soa_id string) error{
-	var items Statement_Of_Account_Details
-	
-	if err := db.First(&items, "soa_details_id = ?", soa_id).Error; err != nil {
-		fmt.Println("items not found - model")
-		return nil
+func (soa_d *Statement_Of_Account_Details) UpdatesItemsSoa(db *gorm.DB, soa_id string) error {
+	if soa_d == nil {
+		return fmt.Errorf("received nil Statement_Of_Account_Details")
 	}
-	
-	items.Recipient =            soa_d.Recipient,
-	items.Installment_Standing = soa_d.Installment_Standing,
-	items.Due_Date =             soa_d.Due_Date,
-	items.SOA_Amount =           soa_d.SOA_Amount,
-	items.Payment_Date =         soa_d.Payment_Date,
-	items.Payment_Amount =       soa_d.Payment_Amount,
-	items.Payment_Allocation =   soa_d.Payment_Allocation,
-	items.Status =               soa_d.Status,
-	items.Aging =                soa_d.Aging,
-	items.Updated_At =           soa_d.Updated_At,
+
+	var items Statement_Of_Account_Details
+
+	if err := db.First(&items, "soa_details_id = ?", soa_id).Error; err != nil {
+		return fmt.Errorf("items not found: %w", err)
+	}
+
+	// items.Recipient = soa_d.Recipient
+	// items.Installment_Standing = soa_d.Installment_Standing
+	// items.Due_Date = soa_d.Due_Date
+	// items.SOA_Amount = soa_d.SOA_Amount
+	// items.Payment_Date = soa_d.Payment_Date
+	// items.Payment_Amount = soa_d.Payment_Amount
+	// items.Payment_Allocation = soa_d.Payment_Allocation
+	// items.Status = soa_d.Status
+	// items.Aging = soa_d.Aging
+	// items.Updated_At = soa_d.Updated_At
+
+	if err := db.Save(&items).Error; err != nil {
+		return fmt.Errorf("failed to save updated items: %w", err)
+	}
+
+	return nil
 }

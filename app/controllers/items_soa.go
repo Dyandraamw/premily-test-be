@@ -165,5 +165,20 @@ func (server *Server) UpdateItemSoaAction(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	SoaDet_ID := vars["soa_details_id"]
 
+	recipient := r.FormValue("recipient")
+	ins_standing := r.FormValue("ins_standing")
+	due_date := r.FormValue("due_date")
+	soa_amount := r.FormValue("soa_amount")
+	payment_date := r.FormValue("payment_date")
+	payment_amount := r.FormValue("payment_amount")
+
+
+	if recipient == "" || ins_standing == "" || due_date == "" || soa_amount == "" ||
+		payment_date == "" || payment_amount == ""
+	{
+		http.Error(w, "Fill the field !", + err.Error(), http.StatusBadRequest)
+		return
+	}
+
 
 }
