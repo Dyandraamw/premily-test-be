@@ -15,6 +15,9 @@ func (server *Server) initializeRoutes() {
 	server.Router.HandleFunc("/sign-in", server.SignInAction).Methods("POST")
 	server.Router.HandleFunc("/sign-up", server.SignUpAction).Methods("POST")
 
+	server.Router.HandleFunc("/forgot-password", server.ForgotPassword).Methods("POST")
+	server.Router.HandleFunc("/reset-password", server.ResetPasswordAction).Methods("POST")
+
 	api := server.Router.PathPrefix("/api").Subrouter()
 	api.Use(middlewares.JwtMiddleware)
 
