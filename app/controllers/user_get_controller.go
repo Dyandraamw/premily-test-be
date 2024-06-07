@@ -1,21 +1,12 @@
-package controller
+package controllers
 
 import (
 	"encoding/json"
-	"fmt"
-	"time"
 
 	"net/http"
-	"os"
-	"path/filepath"
 
-	"regexp"
-
-	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
 
 	"gorm.io/gorm"
 )

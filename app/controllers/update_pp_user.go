@@ -2,12 +2,14 @@ package controllers
 
 import (
 	"encoding/json"
+	"time"
 
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/frangklynndruru/premily_backend/app/models"
+	"github.com/gorilla/mux"
 )
 
 func (server *Server) UpdatePhotoProfile(w http.ResponseWriter, r *http.Request) {
