@@ -50,6 +50,7 @@ func (server *Server) initializeRoutes() {
 
 	/* === HANDLE ROUTES FOR ADJUSTMENT === */
 	api.HandleFunc("/add-adjustment/{payment_status_id}", server.AddAjustment).Methods("POST")
+	api.HandleFunc("/edit-adjustment/{adjustment_id}", server.EditAdjustment).Methods("PUT")
 
 
 	/* === HANDLE ROUTES FOR PAYMENT STATUS === */

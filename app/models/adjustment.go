@@ -36,6 +36,23 @@ func (adjustment *Adjustment) CreateAdjustment(db *gorm.DB, adjust *Adjustment) 
     return adjustM, nil
 }
 
+func (adj *Adjustment) UpdateAdjustment(db *gorm.DB, adjust_id string) error {
+    var adj_save Adjustment
+    err := db.Debug().First(&adj_save, "adjustment_id = ?", adjust_id).Error
+    if err != nil{
+        return fmt.Errorf("Adjustment not found: %w", err)
+    }
+    adj_save.Adjustment_Title = adj.Adjustment_Title
+    adj_save.Adjustment_Amount = adj.Adjustment_Amount
+    adj_save.Updated_At = time.Now()
+
+    err = db.Save(&adj_save).Error
+    if err != nil{
+        return fmt.Errorf("Failed to save update of adjustment: %w", err)
+    }
+    return nil
+}
+
 func CalculateAdjustment(db *gorm.DB, pStatID string) (Decimal, error)  {
     var adjustments []Adjustment
 
