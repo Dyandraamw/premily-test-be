@@ -1,8 +1,11 @@
 package controllers
 
-import(
+import (
 	"net/http"
+	"time"
+
 	"github.com/frangklynndruru/premily_backend/app/models"
+	"github.com/google/uuid"
 )
 
 func (server *Server) ForgotPassword(w http.ResponseWriter, r *http.Request) {
@@ -15,5 +18,18 @@ func (server *Server) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
+	resetToken := uuid.New().String()
+	resetTokenExp := time.Now().Add(1 * time.Hour)
+
+	user.Reset_Token = resetToken
+	user.Reset_TokenExp = resetTokenExp
+
+	err = server.DB.Save(user).Error
+	if err != nil{
+		http.Error(w, "Set token for reset fail!"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//send reset email
+	to := user.Email
 }

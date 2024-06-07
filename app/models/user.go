@@ -20,7 +20,7 @@ type User struct {
 	Role           Role   `gorm:"default:'pending';not null"`
 	Verified       Verify `gorm:"default:'pending';not null"`
 	RememberToken  string `gorm:"size:255;not null"`
-	Is_Forget      string `gorm:"size:255"`
+	Reset_Token      string `gorm:"size:255"`
 	Reset_TokenExp time.Time
 
 	Invoice              []Invoice              `gorm:"foreignKey : UserID"`
