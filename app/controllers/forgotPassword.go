@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -15,7 +16,7 @@ func (server *Server) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 
 	var user models.User
-	_, err := user.FindEmailRegis(server.DB, email)
+	err := server.DB.First(&user, "LOWER(email) = ?", email).Error
 	if err != nil {
 		http.Error(w, "Email not found!"+err.Error(), http.StatusNotFound)
 		return
@@ -27,8 +28,8 @@ func (server *Server) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	user.Reset_Token = resetToken
 	user.Reset_TokenExp = resetTokenExp
 
-	err = server.DB.Save(user).Error
-	if err != nil{
+	err = server.DB.Save(&user).Error
+	if err != nil {
 		http.Error(w, "Set token for reset fail!"+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -37,8 +38,8 @@ func (server *Server) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	to := user.Email
 	subject := "Password Reset Request"
 	body := "To reset your password, please click the link below:\n\n" +
-			os.Getenv("APP_PORT")+ resetToken
-	
+		os.Getenv("APP_PORT") + resetToken
+
 	err = sendEmail(to, subject, body)
 	if err != nil {
 		http.Error(w, "Failed to send reset email: "+err.Error(), http.StatusInternalServerError)
@@ -47,7 +48,6 @@ func (server *Server) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Password reset email sent"))
 }
-
 
 func sendEmail(to, subject, body string) error {
 	from := os.Getenv("APP_EMAIL")
@@ -58,14 +58,21 @@ func sendEmail(to, subject, body string) error {
 		"Subject: " + subject + "\n\n" +
 		body
 
-	err := smtp.SendMail("smtp.gmail.com:587",
-		smtp.PlainAuth("", from, password, "smtp.gmail.com"),
-		from, []string{to}, []byte(msg))
+	auth := smtp.PlainAuth("", from, password, "smtp.gmail.com")
+	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, []byte(msg))
 
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+	return nil
+	// err := smtp.SendMail("smtp.gmail.com:587",
+	// 	smtp.PlainAuth("", from, password, "smtp.gmail.com"),
+	// 	from, []string{to}, []byte(msg))
+
+	// return err
 }
 
-func (server *Server) ResetPasswordAction(w http.ResponseWriter, r *http.Request){
+func (server *Server) ResetPasswordAction(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	newPassword := r.FormValue("new_password")
 
@@ -84,7 +91,7 @@ func (server *Server) ResetPasswordAction(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Invalid token", http.StatusBadRequest)
 		return
 	}
-	if user.Reset_TokenExp.Before(time.Now()){
+	if user.Reset_TokenExp.Before(time.Now()) {
 		http.Error(w, "Token has expired", http.StatusBadRequest)
 		return
 	}
@@ -94,7 +101,7 @@ func (server *Server) ResetPasswordAction(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	makeNewPassword, err :=bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	makeNewPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
@@ -104,8 +111,8 @@ func (server *Server) ResetPasswordAction(w http.ResponseWriter, r *http.Request
 	user.Reset_Token = ""
 	user.Reset_TokenExp = time.Time{}
 
-	err = server.DB.Save(user).Error
-	if err != nil{
+	err = server.DB.Save(&user).Error
+	if err != nil {
 		http.Error(w, "Failed new password!"+err.Error(), http.StatusBadRequest)
 		return
 	}

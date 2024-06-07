@@ -6,49 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
 	
 	"github.com/frangklynndruru/premily_backend/app/controllers/auth"
 	"github.com/frangklynndruru/premily_backend/app/models"
 	
 	"github.com/gorilla/mux"
-
-	// "github.com/jung-kurt/gofpdf"
 	"github.com/shopspring/decimal"
 )
 
-func (server *Server) Invoice(w http.ResponseWriter, r *http.Request) {
-	invoiceModel := models.Invoice{}
-
-	invoices, err := invoiceModel.GetInvoiceResponseList(server.DB)
-
-	// fmt.Println(invoiceModel.GetInvoice(server.DB))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	data, _ := json.Marshal(invoices)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-
-}
-
-func (server *Server) GetInvoiceByID( w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	invoice_ID := vars["invoices_id"]
-
-	invoiceModel := models.Invoice{}
-
-	invoices, err := invoiceModel.GetInvoiceByIDmodel(server.DB, invoice_ID)
-	if err != nil {
-		
-		http.Error(w, "Invoice not found!"+err.Error(), http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(invoices)
-}
 
 func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Request) {
 
@@ -133,7 +98,6 @@ func (server *Server) CreateInvoicesAction(w http.ResponseWriter, r *http.Reques
 		periode_start == "" || periode_end == "" || terms_of_period == "" || remarks == "" || due_date == "" || ins_amount == "" ||
 		items_name == "" || sum_ins_amount == "" || notes == "" {
 		http.Error(w, "Please fill the required fields!", http.StatusSeeOther)
-
 		return
 	}
 
