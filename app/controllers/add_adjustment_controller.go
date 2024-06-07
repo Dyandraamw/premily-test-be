@@ -121,64 +121,6 @@ func (server *Server) AddAjustment(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-/*
-func (server *Server) EditAdjustment(w http.ResponseWriter, r *http.Request)  {
-	vars := mux.Vars(r)
-	adjust_id := vars["adjustment_id"]
-
-	var existAdjustment models.Adjustment
-	if err := server.DB.First(&existAdjustment, "adjustment_id = ?", adjust_id).Error; err != nil{
-		http.Error(w, "Adjustment not found - control"+err.Error(), http.StatusNotFound)
-		return
-	}
-
-	adj_amount := r.Form["adjustment_amount"]
-	
-	if len(adj_amount) == 0{
-		http.Error(w, "Please fill the required fields!", http.StatusSeeOther)
-		return
-	}
-	var adjust_amounts []decimal.Decimal
-
-	for _, amt := range adj_amount {
-
-		adjust_amount, err := convertToDecimal(amt)
-		if err != nil {
-			http.Error(w, "invalid payment amount!", http.StatusBadRequest)
-			return
-		}
-		adjust_amounts = append(adjust_amounts, adjust_amount.Decimal)
-	}
-
-	existAdjustment.Adjustment_Amount =  models.Decimal{Decimal: adjust_amounts[0]}
-	existAdjustment.Updated_At = time.Now()
-
-	err := existAdjustment.UpdateAdjustment(server.DB, adjust_id)
-	if err != nil{
-		http.Error(w, "Failed to update adjustment: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	err = server.DB.First(&existAdjustment, "adjustment_id = ?", adjust_id).Error
-	if err != nil{
-		http.Error(w, "Response fail!: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Marshal the updated SOA details into JSON
-	data, err := json.Marshal(existAdjustment)
-	if err != nil {
-		http.Error(w, "Failed to marshal JSON response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Set response headers and write JSON data
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-
-}
-*/
-
 func (server *Server) EditAdjustment(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	adjust_id := vars["adjustment_id"]
