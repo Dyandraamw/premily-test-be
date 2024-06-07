@@ -20,7 +20,7 @@ func (server *Server) AddAjustment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if adjustment_title == "" || len(adjustment_amount) == 0 {
 		// http.Error(w, err.Error(), http.StatusSeeOther)
-		fmt.Println("ini panjang adjsutment : ", len(adjustment_amount))
+		// fmt.Println("ini panjang adjsutment : ", len(adjustment_amount))
 		http.Error(w, "Please fill the required fields!", http.StatusSeeOther)
 		return
 	}
@@ -120,3 +120,5 @@ func (server *Server) AddAjustment(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }
+
+

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/frangklynndruru/premily_backend/app/models"
+	
 	"github.com/shopspring/decimal"
 )
 
@@ -43,19 +44,6 @@ func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid payment amount!", http.StatusBadRequest)
 		return
 	}
-
-	// var prevBalance decimal.Decimal
-	// for _, detail := range installment.Payment_Details {
-	// 	prevBalance = prevBalance.Add(detail.Pay_Amount.Decimal)
-	// }
-
-	// var paymentAllocation decimal.Decimal
-	// if prevBalance.LessThan(decimal.Zero) {
-	// 	paymentAllocation = pay_amount
-	// } else {
-	// 	paymentAllocation = prevBalance.Sub(pay_amount)
-	// }
-
 	var idGeneratorPaymentDetail = NewIDGenerator("Payment-Details")
 
 	pay_detail := &models.Payment_Details{}
@@ -88,4 +76,3 @@ func (server *Server) AddPayment(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
-

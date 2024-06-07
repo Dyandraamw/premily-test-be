@@ -1,8 +1,10 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
+	// "github.com/go-logr/logr/funcr"
 	"gorm.io/gorm"
 )
 
@@ -46,4 +48,42 @@ func (soa_d *Statement_Of_Account_Details) CreateSoaDetails(db *gorm.DB, soa_det
 		return nil, err
 	}
 	return soa_Details_Model, nil
+}
+
+func (soa_d *Statement_Of_Account_Details) UpdatesItemsSoa(db *gorm.DB, soa_id string) error {
+	if soa_d == nil {
+		return fmt.Errorf("received nil Statement_Of_Account_Details")
+	}
+
+	var items Statement_Of_Account_Details
+
+	if err := db.First(&items, "soa_details_id = ?", soa_id).Error; err != nil {
+		return fmt.Errorf("items not found: %w", err)
+	}
+
+	items.Recipient = soa_d.Recipient
+	items.Installment_Standing = soa_d.Installment_Standing
+	items.Due_Date = soa_d.Due_Date
+	items.SOA_Amount = soa_d.SOA_Amount
+	items.Payment_Date = soa_d.Payment_Date
+	items.Payment_Amount = soa_d.Payment_Amount
+	items.Updated_At = soa_d.Updated_At
+
+	if err := db.Save(&items).Error; err != nil {
+		return fmt.Errorf("failed to save updated items: %w", err)
+	}
+
+	return nil
+}
+
+
+func (item *Statement_Of_Account_Details) GetItemsBySoaID(db *gorm.DB, soa_id string)(*[]Statement_Of_Account_Details, error){
+	var items []Statement_Of_Account_Details
+	err := db.Debug().Where("soa_id = ?", soa_id).Find(&items).Error
+	if err != nil {
+		fmt.Println("Retrive items fail - model"+err.Error())
+		return nil, err
+	}
+
+	return &items, nil
 }

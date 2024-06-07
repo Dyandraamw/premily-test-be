@@ -181,20 +181,6 @@ func (g *IDGenerator) NextID() string {
 	return fmt.Sprintf("%s-%s", g.prefix, g.pad(g.count, 5))
 }
 
-// func NewIDGenerator(prefix string) *IDGenerator {
-// 	return &IDGenerator{
-// 		prefix:  prefix,
-// 		count: 0,
-// 	}
-// }
-
-// func (g *IDGenerator) NextID() string {
-// 	g.mu.Lock()
-// 	defer g.mu.Unlock()
-
-//		g.count++
-//		return fmt.Sprintf("%s-%05d", g.prefix, g.count)
-//	}
 func (g *IDGenerator) pad(number, width int) string {
 	return fmt.Sprintf("%0*d", width, number)
 }

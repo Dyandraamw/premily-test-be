@@ -139,7 +139,7 @@ func (i *Invoice) GetInvoiceByIDmodel(db *gorm.DB, invoice_ID string) (*Invoice,
 
 func (i *Invoice) DeletedInvoices(db *gorm.DB, invoice_ID string) error {
 	invoice := &Invoice{}
-	if err := db.Debug().First(&invoice, "invoice_id = ?", invoice_ID).Error; err != nil {
+	if err := db.Debug().First(&invoice, "Invoice_ID = ?", invoice_ID).Error; err != nil {
 		return err
 	}
 	if err := db.Delete(&invoice).Error; err != nil {
@@ -149,13 +149,14 @@ func (i *Invoice) DeletedInvoices(db *gorm.DB, invoice_ID string) error {
 	return nil
 }
 
-func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []Installment, sum_insured []Sum_Insured_Details) error {
+func (i *Invoice) UpdateInvoices(db *gorm.DB, invoiceID string, installments []Installment, sumInsured []Sum_Insured_Details) error {
 	var invoice Invoice
-	if err := db.First(&invoice, "invoice_id = ?", invoice_ID).Error; err != nil {
-		fmt.Println("invoice tidak ditemukan - model")
-		return nil
+	if err := db.First(&invoice, "invoice_id = ?", invoiceID).Error; err != nil {
+		fmt.Println("invoice not found - model")
+		return err
 	}
-	invoice.Type = i.Type
+
+	
 	invoice.Recipient = i.Recipient
 	invoice.Address = i.Address
 	invoice.Net_Premium = i.Net_Premium
@@ -164,6 +165,7 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []
 	invoice.Desc_Risk_Management = i.Desc_Risk_Management
 	invoice.Desc_Brokage = i.Desc_Brokage
 	invoice.Desc_PPH = i.Desc_PPH
+	invoice.Total_Premium_Due = i.Total_Premium_Due
 	invoice.Policy_Number = i.Policy_Number
 	invoice.Name_Of_Insured = i.Name_Of_Insured
 	invoice.Address_Of_Insured = i.Address_Of_Insured
@@ -172,53 +174,45 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []
 	invoice.Period_End = i.Period_End
 	invoice.Terms_Of_Period = i.Terms_Of_Period
 	invoice.Remarks = i.Remarks
-	invoice.Created_At = i.Created_At
 	invoice.Updated_At = i.Updated_At
 
-	err := db.Save(&invoice).Error
-	if err != nil {
+	if err := db.Save(&invoice).Error; err != nil {
 		return err
 	}
 
-	for _, installment := range installments {
-		var existInstallment Installment
-		err := db.Where("installment_id = ? AND invoice_id = ?", installment.Installment_ID, invoice_ID).First(&existInstallment).Error
-
-		if err != nil {
+	for _, inst := range installments {
+		var existingInstallment Installment
+		if err := db.Where("installment_id = ? AND invoice_id = ?", inst.Installment_ID, invoiceID).First(&existingInstallment).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				installment.Invoice_ID = invoice_ID
-				if err := db.Create(&installment).Error; err != nil {
+				inst.Invoice_ID = invoiceID
+				if err := db.Create(&inst).Error; err != nil {
 					return err
 				}
 			} else {
 				return err
 			}
 		} else {
-			existInstallment.Due_Date = installment.Due_Date
-			existInstallment.Ins_Amount = installment.Ins_Amount
-			if err := db.Save(&installment).Error; err != nil {
+			existingInstallment.Due_Date = inst.Due_Date
+			existingInstallment.Ins_Amount = inst.Ins_Amount
+			if err := db.Save(&existingInstallment).Error; err != nil {
 				return err
 			}
 		}
 	}
 
-	for _, sum_ins := range sum_insured {
-		var existSumIns Sum_Insured_Details
-		err := db.Where("Sum_Insured_ID = ? AND invoice_id", sum_ins.Sum_Insured_ID, invoice_ID).First(&existSumIns).Error
-		if err != nil {
+	for _, sumIns := range sumInsured {
+		var existingSumInsured Sum_Insured_Details
+		if err := db.Where("sum_insured_id = ? AND invoice_id = ?", sumIns.Sum_Insured_ID, invoiceID).First(&existingSumInsured).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				sum_ins.Invoice_ID = invoice_ID
-				if err := db.Create(&sum_ins).Error; err != nil {
-					return err
-				} else {
+				sumIns.Invoice_ID = invoiceID
+				if err := db.Create(&sumIns).Error; err != nil {
 					return err
 				}
 			} else {
-				existSumIns.Items_Name = sum_ins.Items_Name
-				existSumIns.Sum_Insured_Amount = sum_ins.Sum_Insured_Amount
-				existSumIns.Notes = sum_ins.Notes
-				err := db.Save(&sum_ins).Error
-				if err != nil {
+				existingSumInsured.Items_Name = sumIns.Items_Name
+				existingSumInsured.Sum_Insured_Amount = sumIns.Sum_Insured_Amount
+				existingSumInsured.Notes = sumIns.Notes
+				if err := db.Save(&existingSumInsured).Error; err != nil {
 					return err
 				}
 			}
@@ -226,7 +220,6 @@ func (i *Invoice) UpdateInvoices(db *gorm.DB, invoice_ID string, installments []
 	}
 
 	return nil
-
 }
 
 func (i *Invoice) CreateInvoices(db *gorm.DB, invoices *Invoice) (*Invoice, error) {

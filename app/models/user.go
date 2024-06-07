@@ -9,17 +9,19 @@ import (
 )
 
 type User struct {
-	UserID        string `gorm:"size:100;not null;uniqueIndex;primary_key"`
-	Image         string `gorm:"size:255"`
-	Username      string `gorm:"size:255;not null;uniqueIndex"`
-	Name          string `gorm:"size:255;not null"`
-	Email         string `gorm:"size:255;not null;uniqueIndex"`
-	Phone         string `gorm:"size:100;not null"`
-	Password      string `gorm:"size:255;not null"`
-	CompanyName   string `gorm:"size:255;not null"`
-	Role          Role   `gorm:"default:'pending';not null"`
-	Verified      Verify `gorm:"default:'pending';not null"`
-	RememberToken string `gorm:"size:255;not null"`
+	UserID         string `gorm:"size:100;not null;uniqueIndex;primary_key"`
+	Image          string `gorm:"size:255"`
+	Username       string `gorm:"size:255;not null;uniqueIndex"`
+	Name           string `gorm:"size:255;not null"`
+	Email          string `gorm:"size:255;not null;uniqueIndex"`
+	Phone          string `gorm:"size:100;not null"`
+	Password       string `gorm:"size:255;not null"`
+	CompanyName    string `gorm:"size:255;not null"`
+	Role           Role   `gorm:"default:'pending';not null"`
+	Verified       Verify `gorm:"default:'pending';not null"`
+	RememberToken  string `gorm:"size:255;not null"`
+	Reset_Token      string `gorm:"size:255"`
+	Reset_TokenExp time.Time
 
 	Invoice              []Invoice              `gorm:"foreignKey : UserID"`
 	Payment_Status       []Payment_Status       `gorm:"foreignKey: UserID"`
@@ -102,6 +104,22 @@ func (u *User) CreateUser(db *gorm.DB, params *User) (*User, error) {
 	}
 
 	return user, nil
+}
+
+func (u *User) UpdateUserPicture(db *gorm.DB, user_id string) error {
+	var user User
+	err := db.Debug().First(&user, "user_id = ?", user_id).Error
+	if err != nil {
+		return fmt.Errorf("Picture not found : %w", err)
+	}
+	user.Image = u.Image
+	user.Updated_At = u.Updated_At
+
+	if err := db.Save(&user).Error; err != nil {
+		return fmt.Errorf("failed to save updated your picture: %w", err)
+	}
+
+	return nil
 }
 
 func (u *User) GetUnverifiedUser(db *gorm.DB) ([]*User, error) {
