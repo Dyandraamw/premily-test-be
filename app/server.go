@@ -16,7 +16,13 @@ import (
 	_ "gorm.io/gorm"
 )
 
+func GetEnv(key, fallback string) string   {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
 
+	return fallback
+}
 
 func Run() {
 	var server = controllers.Server{}
@@ -29,15 +35,15 @@ func Run() {
 	}
 
 	
-	appConfig.AppName = os.Getenv("APP_NAME")
-	appConfig.AppEnv = os.Getenv("APP_ENV")
-	appConfig.AppPort = os.Getenv("APP_PORT")
+	appConfig.AppName = GetEnv("APP_NAME", "Premily")
+	appConfig.AppEnv = GetEnv("APP_ENV", "Development")
+	appConfig.AppPort = GetEnv("APP_PORT", "9000")
 	
-	dbConfig.DBHost = os.Getenv("DB_HOST")
-	dbConfig.DBUser = os.Getenv("DB_USER")
-	dbConfig.DBPassword = os.Getenv("DB_PASSWORD")
-	dbConfig.DBName = os.Getenv("DB_NAME")
-	dbConfig.DBPort = os.Getenv("DB_PORT")
+	dbConfig.DBHost = GetEnv("DB_HOST", "localhost")
+	dbConfig.DBUser = GetEnv("DB_USER", "user")
+	dbConfig.DBPassword = GetEnv("DB_PASSWORD", "post9090")
+	dbConfig.DBName = GetEnv("DB_NAME", "premily")
+	dbConfig.DBPort = GetEnv("DB_PORT", "5433")
 	
 	flag.Parse()
 
