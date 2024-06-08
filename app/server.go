@@ -39,6 +39,10 @@ func Run() {
 	appConfig.AppEnv = GetEnv("APP_ENV", "Development")
 	appConfig.AppPort = GetEnv("APP_PORT", "9000")
 	
+	if port := os.Getenv("APP_PORT"); port != "" {
+        appConfig.AppPort = port
+    }
+
 	dbConfig.DBHost = GetEnv("DB_HOST", "localhost")
 	dbConfig.DBUser = GetEnv("DB_USER", "user")
 	dbConfig.DBPassword = GetEnv("DB_PASSWORD", "post9090")
