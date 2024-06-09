@@ -58,9 +58,9 @@ func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 }
 
 func (server *Server) Run(addr string) {
-	fmt.Printf("Listening to port %s", addr)
+	fmt.Printf("Listening to port 8080")
 
-	log.Fatal(http.ListenAndServe(addr, server.Router))
+	log.Fatal(http.ListenAndServe(":8080", server.Router))
 }
 
 func (server *Server) initializeDB(dbConfig DBConfig) {
