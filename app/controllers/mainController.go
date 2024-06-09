@@ -44,6 +44,7 @@ type DBConfig struct {
 	DBPassword string
 	DBName     string
 	DBPort     string
+	SSLMode	   string
 }
 
 var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
