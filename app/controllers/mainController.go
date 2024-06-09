@@ -66,7 +66,7 @@ func (server *Server) Run(addr string) {
 
 func (server *Server) initializeDB(dbConfig DBConfig) {
 	var err error
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=require TimeZone=Asia/Jakarta",
 		dbConfig.DBHost, dbConfig.DBUser, dbConfig.DBPassword,
 		dbConfig.DBName, dbConfig.DBPort)
 	server.DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
